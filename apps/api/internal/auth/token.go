@@ -38,9 +38,16 @@ func (t *TokenIssuer) Issue(u User) (string, error) {
 func (t *TokenIssuer) Parse(raw string) (User, error) {
 	var claims jwt.RegisteredClaims
 
-	// WithValidMethods pins the algorithm. Without it, a token whose header
-	// says alg "none" would parse as validly signed, and anyone could mint
-	// their own sessions.
+	// Pin the accepted algorithm.
+	//
+	// This is not what stops an alg "none" token today: jwt/v5 already
+	// refuses those unless you hand it the library's explicit unsafe sentinel
+	// as the key. The pin earns its place against algorithm confusion, which
+	// the library cannot rule out on its own. If this ever moves to RS256,
+	// a key function handing back a public key would otherwise let an
+	// attacker sign HS256 using that public key as the shared secret — the
+	// key is public, so anyone can. Pinning the algorithm here means the
+	// server decides, not the token.
 	_, err := jwt.ParseWithClaims(raw, &claims,
 		func(*jwt.Token) (any, error) { return t.secret, nil },
 		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
