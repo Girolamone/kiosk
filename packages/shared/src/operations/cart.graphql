@@ -1,0 +1,30 @@
+fragment CartContents on Cart {
+  token
+  currency
+  totalCents
+  items {
+    productId
+    name
+    unitPriceCents
+    quantity
+    lineTotalCents
+  }
+}
+
+query Cart($token: String!) {
+  cart(token: $token) {
+    ...CartContents
+  }
+}
+
+mutation SetCartItem($input: SetCartItemInput!) {
+  setCartItem(input: $input) {
+    ...CartContents
+  }
+}
+
+mutation CreateCheckout($token: String!, $email: String!) {
+  createCheckout(token: $token, email: $email) {
+    url
+  }
+}

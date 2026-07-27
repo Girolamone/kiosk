@@ -1,14 +1,20 @@
-import { useParams } from 'react-router'
+import { useSearchParams, useParams } from 'react-router'
 import { useQuery } from 'urql'
 import { StorefrontDocument, formatMoney, type ProductCardFragment } from '@kiosk/shared'
-import { Empty, Spinner } from '../components/ui'
+import { Button, Empty, Spinner } from '../components/ui'
+import { CartPanel } from '../components/CartPanel'
+import { useCart } from '../lib/cart'
 
 export function Storefront() {
   const { slug = '' } = useParams()
+  const [searchParams] = useSearchParams()
+  const justPaid = searchParams.get('paid') === '1'
+
   const [{ data, fetching, error }] = useQuery({
     query: StorefrontDocument,
     variables: { slug },
   })
+  const { cart, busy, setQuantity } = useCart(slug)
 
   if (fetching && !data) {
     return (
@@ -38,6 +44,18 @@ export function Storefront() {
         {store.description && <p className="mt-2 max-w-xl text-muted">{store.description}</p>}
       </header>
 
+      {justPaid && (
+        <p className="mt-8 rounded-md bg-accent-soft px-4 py-3 text-sm">
+          Thank you, your order is on its way. A receipt is in your inbox.
+        </p>
+      )}
+
+      <div className="mt-8">
+        {cart && cart.items.length > 0 && (
+          <CartPanel cart={cart} busy={busy} onSetQuantity={setQuantity} />
+        )}
+      </div>
+
       {store.products.length === 0 ? (
         <div className="mt-8">
           <Empty title="Nothing for sale yet">
@@ -47,7 +65,14 @@ export function Storefront() {
       ) : (
         <ul className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {store.products.map((product) => (
-            <ProductTile key={product.id} product={product} currency={store.currency} />
+            <ProductTile
+              key={product.id}
+              product={product}
+              currency={store.currency}
+              inCart={cart?.items.find((item) => item.productId === product.id)?.quantity ?? 0}
+              busy={busy}
+              onAdd={(quantity) => setQuantity(product.id, quantity)}
+            />
           ))}
         </ul>
       )}
@@ -58,9 +83,15 @@ export function Storefront() {
 function ProductTile({
   product,
   currency,
+  inCart,
+  busy,
+  onAdd,
 }: {
   product: ProductCardFragment
   currency: string
+  inCart: number
+  busy: boolean
+  onAdd: (quantity: number) => void
 }) {
   const image = product.images[0]
 
@@ -92,6 +123,15 @@ function ProductTile({
       {product.description && (
         <p className="mt-1 line-clamp-3 text-sm text-muted">{product.description}</p>
       )}
+
+      <Button
+        variant="secondary"
+        className="mt-3 w-full"
+        disabled={busy}
+        onClick={() => onAdd(inCart + 1)}
+      >
+        {inCart > 0 ? `In basket (${inCart})` : 'Add to basket'}
+      </Button>
     </li>
   )
 }
