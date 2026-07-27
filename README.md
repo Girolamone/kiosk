@@ -1,5 +1,8 @@
 # Kiosk
 
+[![API](https://github.com/Girolamone/kiosk/actions/workflows/api.yml/badge.svg)](https://github.com/Girolamone/kiosk/actions/workflows/api.yml)
+[![Web](https://github.com/Girolamone/kiosk/actions/workflows/web.yml/badge.svg)](https://github.com/Girolamone/kiosk/actions/workflows/web.yml)
+
 A small storefront platform. A seller photographs the thing they are selling;
 Kiosk reads the photograph and drafts the title, description and alt text;
 they correct what it got wrong and publish.
