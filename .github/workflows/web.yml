@@ -1,0 +1,38 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Types are generated from the Go schema and committed. If someone
+      # changes the schema without regenerating, the two drift apart silently
+      # and the app compiles against a contract the server no longer serves.
+      - name: Check generated types are current
+        run: |
+          npm --workspace @kiosk/shared run codegen
+          if ! git diff --quiet -- packages/shared/src/graphql; then
+            echo "Generated types are stale. Run: npm --workspace @kiosk/shared run codegen"
+            git diff -- packages/shared/src/graphql
+            exit 1
+          fi
+
+      - name: Typecheck and build
+        run: npm --workspace web run build
+
+      - name: Lint
+        run: npm --workspace web run lint
