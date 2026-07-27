@@ -111,34 +111,17 @@ func run(cfg config.Config, logger *slog.Logger) error {
 		}
 	}()
 
-	mux := http.NewServeMux()
-	mux.Handle("/graphql", sessions(batching(newGraphQLHandler(resolver))))
-	mux.Handle("POST /api/uploads", sessions(httpapi.Upload(files, logger)))
-	// No session middleware: Stripe is the caller and authenticates with a
-	// signature, not a cookie.
-	mux.Handle("POST /api/stripe/webhook", httpapi.StripeWebhook(gateway, baskets, logger))
-
-	// With the local driver the API serves the files it stored. With GCS the
-	// bucket serves them and this route does not exist.
-	if local, ok := files.(*storage.Local); ok {
-		mux.Handle("GET /uploads/", local.Handler())
-	}
-
-	if cfg.WebDir != "" {
-		// In production one binary serves both the API and the app, so
-		// everything is one origin: no CORS, and the session cookie stays
-		// first-party.
-		mux.Handle("/", httpapi.SPA(cfg.WebDir))
-		mux.Handle("GET /playground", playground.Handler("Kiosk API", "/graphql"))
-		logger.Info("serving the web app", "dir", cfg.WebDir)
-	} else {
-		// API-only: the Vite dev server is serving the app.
-		mux.Handle("/", playground.Handler("Kiosk API", "/graphql"))
-	}
-	mux.Handle("GET /healthz", healthHandler(pool))
-	// The playground is intentionally public: this is a demo, and being able
-	// to explore the schema is the point.
-	mux.Handle("/", playground.Handler("Kiosk API", "/graphql"))
+	mux := newRouter(routes{
+		cfg:      cfg,
+		logger:   logger,
+		resolver: resolver,
+		files:    files,
+		gateway:  gateway,
+		baskets:  baskets,
+		health:   healthHandler(pool),
+		sessions: sessions,
+		batching: batching,
+	})
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
@@ -212,6 +195,60 @@ func newStorage(cfg config.Config) (storage.Store, error) {
 	default:
 		return nil, fmt.Errorf("unknown STORAGE_DRIVER %q: want \"local\" or \"gcs\"", cfg.StorageDriver)
 	}
+}
+
+type middleware = func(http.Handler) http.Handler
+
+type routes struct {
+	cfg      config.Config
+	logger   *slog.Logger
+	resolver *graph.Resolver
+	files    storage.Store
+	gateway  payments.Gateway
+	baskets  httpapi.OrderSettler
+	health   http.Handler
+	sessions middleware
+	batching middleware
+}
+
+// newRouter wires every route.
+//
+// It is a separate function so a test can build the router without a
+// database, a bucket or a network. ServeMux panics on a conflicting pattern
+// at registration time, which means a duplicate route is not a bad response -
+// it is a process that refuses to start, discovered on deploy. A test that
+// merely calls this catches that on the laptop instead.
+func newRouter(r routes) http.Handler {
+	mux := http.NewServeMux()
+
+	mux.Handle("/graphql", r.sessions(r.batching(newGraphQLHandler(r.resolver))))
+	mux.Handle("POST /api/uploads", r.sessions(httpapi.Upload(r.files, r.logger)))
+	// No session middleware: Stripe is the caller, and it authenticates with
+	// a signature rather than a cookie.
+	mux.Handle("POST /api/stripe/webhook", httpapi.StripeWebhook(r.gateway, r.baskets, r.logger))
+	mux.Handle("GET /healthz", r.health)
+
+	// With the local driver the API serves the files it stored. With GCS the
+	// bucket serves them and this route does not exist.
+	if local, ok := r.files.(*storage.Local); ok {
+		mux.Handle("GET /uploads/", local.Handler())
+	}
+
+	// The playground stays reachable on purpose: this is a demo, and being
+	// able to explore the schema is part of the point.
+	if r.cfg.WebDir != "" {
+		// In production one binary serves both the API and the app, so the
+		// deployment is a single origin: no CORS, and the session cookie
+		// stays first-party. The app takes "/", so the playground moves.
+		mux.Handle("/", httpapi.SPA(r.cfg.WebDir))
+		mux.Handle("GET /playground", playground.Handler("Kiosk API", "/graphql"))
+		r.logger.Info("serving the web app", "dir", r.cfg.WebDir)
+	} else {
+		// API only: the Vite dev server is serving the app.
+		mux.Handle("/", playground.Handler("Kiosk API", "/graphql"))
+	}
+
+	return mux
 }
 
 func newGraphQLHandler(resolver *graph.Resolver) http.Handler {
