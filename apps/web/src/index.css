@@ -3,6 +3,9 @@
 @theme {
   --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Mono carries the numbers, labels and plate marks. It is what makes the
+     page read as a catalogue rather than a product grid. */
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 
   /* Warm neutrals rather than pure grey, so product photography sits on
      something that reads as paper instead of a screenshot. */
@@ -17,6 +20,21 @@
   --color-accent: #1c5c47;
   --color-accent-hover: #164838;
   --color-accent-soft: #e8f0ec;
+
+  /* A near-black that is warm rather than neutral, so the dark band belongs
+     to the same page as the paper instead of looking pasted on. */
+  --color-dark: #16150f;
+}
+
+@layer components {
+  /* Small caps mono, letter-spaced. Used for anything that labels rather
+     than speaks: plate numbers, section marks, field captions. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
 }
 
 @layer base {

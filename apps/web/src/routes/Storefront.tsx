@@ -18,12 +18,11 @@ export function Storefront() {
 
   if (fetching && !data) {
     return (
-      <p className="flex items-center gap-2 py-16 text-muted">
+      <p className="flex items-center gap-2 py-24 text-muted">
         <Spinner /> Loading the shop…
       </p>
     )
   }
-
   if (error) {
     return <Empty title="That shop could not be loaded">{error.message}</Empty>
   }
@@ -37,47 +36,81 @@ export function Storefront() {
     )
   }
 
+  const lead = store.products[0]
+
   return (
     <div>
-      <header className="border-b border-line pb-10">
-        <h1 className="text-5xl">{store.name}</h1>
-        {store.description && (
-          <p className="mt-3 max-w-xl text-lg text-muted">{store.description}</p>
-        )}
-      </header>
+      {/* The lead print is the masthead. A shop selling photographs that
+          opens on anything other than a photograph wastes its first screen. */}
+      {lead?.images[0] ? (
+        <section className="relative -mx-6 mb-20 h-[68vh] min-h-96 overflow-hidden">
+          <img
+            src={lead.images[0].url}
+            alt={lead.images[0].altText || lead.name}
+            className="size-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-dark/85 via-dark/30 to-transparent" />
+
+          <div className="absolute inset-x-0 bottom-0 p-8 sm:p-12">
+            <p className="label text-white/70">Print shop</p>
+            <h1 className="mt-3 max-w-4xl font-display text-6xl leading-[0.95] text-white sm:text-8xl">
+              {store.name}
+            </h1>
+            {store.description && (
+              <p className="mt-5 max-w-md text-white/80">{store.description}</p>
+            )}
+          </div>
+        </section>
+      ) : (
+        <header className="mb-16 border-b border-line pb-10">
+          <h1 className="font-display text-6xl">{store.name}</h1>
+          {store.description && <p className="mt-3 text-lg text-muted">{store.description}</p>}
+        </header>
+      )}
 
       {justPaid && (
-        <p className="mt-8 rounded-md bg-accent-soft px-4 py-3 text-sm text-accent">
+        <p className="mb-12 border-l-2 border-accent bg-accent-soft px-5 py-4 text-accent">
           Thank you, your order is on its way. A receipt is in your inbox.
         </p>
       )}
 
-      <div className="mt-10">
-        {cart && cart.items.length > 0 && (
+      {cart && cart.items.length > 0 && (
+        <div className="mb-20">
           <CartPanel cart={cart} busy={busy} onSetQuantity={setQuantity} />
-        )}
-      </div>
+        </div>
+      )}
 
       {store.products.length === 0 ? (
-        <div className="mt-10">
-          <Empty title="Nothing for sale yet">
-            The shop exists but has not published anything.
-          </Empty>
-        </div>
+        <Empty title="Nothing for sale yet">
+          The shop exists but has not published anything.
+        </Empty>
       ) : (
-        <ul className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-          {store.products.map((product) => (
-            <ProductTile
-              key={product.id}
-              slug={slug}
-              product={product}
-              currency={store.currency}
-              inCart={cart?.items.find((item) => item.productId === product.id)?.quantity ?? 0}
-              busy={busy}
-              onAdd={(quantity) => setQuantity(product.id, quantity)}
-            />
-          ))}
-        </ul>
+        <>
+          <div className="mb-10 flex items-baseline justify-between border-b border-ink pb-4">
+            <h2 className="label">The collection</h2>
+            <span className="label text-muted">
+              {store.products.length} print{store.products.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          {/* Deliberately uneven. Every print at the same size reads as a
+              catalogue page; letting some run wide reads as a curation. */}
+          <ul className="grid gap-x-8 gap-y-20 sm:grid-cols-6">
+            {store.products.map((product, index) => (
+              <ProductTile
+                key={product.id}
+                slug={slug}
+                index={index}
+                product={product}
+                currency={store.currency}
+                wide={index % 5 === 0 || index % 5 === 3}
+                inCart={cart?.items.find((item) => item.productId === product.id)?.quantity ?? 0}
+                busy={busy}
+                onAdd={(quantity) => setQuantity(product.id, quantity)}
+              />
+            ))}
+          </ul>
+        </>
       )}
     </div>
   )
@@ -85,33 +118,38 @@ export function Storefront() {
 
 function ProductTile({
   slug,
+  index,
   product,
   currency,
+  wide,
   inCart,
   busy,
   onAdd,
 }: {
   slug: string
+  index: number
   product: ProductCardFragment
   currency: string
+  wide: boolean
   inCart: number
   busy: boolean
   onAdd: (quantity: number) => void
 }) {
   const image = product.images[0]
+  const plate = String(index + 1).padStart(2, '0')
 
   return (
-    <li className="group">
+    <li className={`group ${wide ? 'sm:col-span-4' : 'sm:col-span-2'}`}>
       <Link to={`/s/${slug}/p/${product.id}`} className="block">
-        <div className="aspect-4/5 overflow-hidden rounded-lg border border-line bg-white">
+        <div className={`overflow-hidden bg-white ${wide ? 'aspect-16/10' : 'aspect-4/5'}`}>
           {image ? (
             <img
               src={image.url}
               // The generated alt text lands here. An empty string would be
               // wrong: this image carries meaning, so it needs a description.
               alt={image.altText || product.name}
-              className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-              loading="lazy"
+              className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              loading={index < 3 ? 'eager' : 'lazy'}
             />
           ) : (
             <div className="flex size-full items-center justify-center text-sm text-muted">
@@ -120,17 +158,22 @@ function ProductTile({
           )}
         </div>
 
-        <div className="mt-4 flex items-baseline justify-between gap-3">
-          <h2 className="text-xl leading-snug transition-colors group-hover:text-accent">
-            {product.name}
-          </h2>
-          <span className="shrink-0 tabular-nums text-muted">
+        <div className="mt-5 flex items-start justify-between gap-6 border-t border-ink pt-3">
+          <div className="min-w-0">
+            <p className="label text-muted">Plate {plate}</p>
+            <h3 className="mt-1.5 font-display text-2xl leading-tight transition-colors group-hover:text-accent">
+              {product.name}
+            </h3>
+          </div>
+          <span className="shrink-0 font-mono text-sm tabular-nums">
             {formatMoney(product.priceCents, currency)}
           </span>
         </div>
 
         {product.description && (
-          <p className="mt-1.5 line-clamp-2 text-sm text-muted">{product.description}</p>
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">
+            {product.description}
+          </p>
         )}
       </Link>
 
