@@ -40,6 +40,12 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AccessToken struct {
+		ExpiresAt func(childComplexity int) int
+		Token     func(childComplexity int) int
+		User      func(childComplexity int) int
+	}
+
 	Cart struct {
 		Currency   func(childComplexity int) int
 		Items      func(childComplexity int) int
@@ -60,6 +66,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CreateAccessToken   func(childComplexity int, email string, password string) int
 		CreateCheckout      func(childComplexity int, token string, email string) int
 		CreateProduct       func(childComplexity int, input model.CreateProductInput) int
 		CreateStore         func(childComplexity int, input model.CreateStoreInput) int
@@ -129,6 +136,7 @@ type MutationResolver interface {
 	CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.Product, error)
 	UpdateProduct(ctx context.Context, input model.UpdateProductInput) (*model.Product, error)
 	GenerateProductCopy(ctx context.Context, imageKey string) (*model.ProductCopy, error)
+	CreateAccessToken(ctx context.Context, email string, password string) (*model.AccessToken, error)
 	SignUp(ctx context.Context, email string, password string) (*model.User, error)
 	LogIn(ctx context.Context, email string, password string) (*model.User, error)
 	LogOut(ctx context.Context) (bool, error)
@@ -166,6 +174,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AccessToken.expiresAt":
+		if e.ComplexityRoot.AccessToken.ExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessToken.ExpiresAt(childComplexity), true
+	case "AccessToken.token":
+		if e.ComplexityRoot.AccessToken.Token == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessToken.Token(childComplexity), true
+	case "AccessToken.user":
+		if e.ComplexityRoot.AccessToken.User == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessToken.User(childComplexity), true
 
 	case "Cart.currency":
 		if e.ComplexityRoot.Cart.Currency == nil {
@@ -230,6 +257,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Checkout.URL(childComplexity), true
 
+	case "Mutation.createAccessToken":
+		if e.ComplexityRoot.Mutation.CreateAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createAccessToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateAccessToken(childComplexity, args["email"].(string), args["password"].(string)), true
 	case "Mutation.createCheckout":
 		if e.ComplexityRoot.Mutation.CreateCheckout == nil {
 			break
@@ -642,6 +680,18 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
 
+func (ec *executionContext) childFields_AccessToken(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "token":
+		return ec.fieldContext_AccessToken_token(ctx, field)
+	case "expiresAt":
+		return ec.fieldContext_AccessToken_expiresAt(ctx, field)
+	case "user":
+		return ec.fieldContext_AccessToken_user(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AccessToken", field.Name)
+}
+
 func (ec *executionContext) childFields_Cart(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "token":
@@ -875,6 +925,28 @@ func (ec *executionContext) childFields___Type(ctx context.Context, field graphq
 // endregion ************************** internal!.gotpl ***************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createAccessToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "password",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["password"] = arg1
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createCheckout_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -1141,6 +1213,84 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AccessToken_token(ctx context.Context, field graphql.CollectedField, obj *model.AccessToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessToken_token(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Token, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessToken_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessToken", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AccessToken_expiresAt(ctx context.Context, field graphql.CollectedField, obj *model.AccessToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessToken_expiresAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExpiresAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessToken_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessToken", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _AccessToken_user(ctx context.Context, field graphql.CollectedField, obj *model.AccessToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessToken_user(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.User) graphql.Marshaler {
+			return ec.marshalNUser2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐUser(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessToken_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Cart_token(ctx context.Context, field graphql.CollectedField, obj *model.Cart) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -1551,6 +1701,50 @@ func (ec *executionContext) fieldContext_Mutation_generateProductCopy(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_generateProductCopy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_createAccessToken(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateAccessToken(ctx, fc.Args["email"].(string), fc.Args["password"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AccessToken) graphql.Marshaler {
+			return ec.marshalNAccessToken2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐAccessToken(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_createAccessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AccessToken(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createAccessToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3948,6 +4142,54 @@ func (ec *executionContext) unmarshalInputUpdateProductInput(ctx context.Context
 
 // region    **************************** object.gotpl ****************************
 
+var accessTokenImplementors = []string{"AccessToken"}
+
+func (ec *executionContext) _AccessToken(ctx context.Context, sel ast.SelectionSet, obj *model.AccessToken) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accessTokenImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AccessToken")
+		case "token":
+			out.Values[i] = ec._AccessToken_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresAt":
+			out.Values[i] = ec._AccessToken_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user":
+			out.Values[i] = ec._AccessToken_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var cartImplementors = []string{"Cart"}
 
 func (ec *executionContext) _Cart(ctx context.Context, sel ast.SelectionSet, obj *model.Cart) graphql.Marshaler {
@@ -4141,6 +4383,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "generateProductCopy":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_generateProductCopy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createAccessToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createAccessToken(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5113,6 +5362,20 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNAccessToken2githubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐAccessToken(ctx context.Context, sel ast.SelectionSet, v model.AccessToken) graphql.Marshaler {
+	return ec._AccessToken(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccessToken2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐAccessToken(ctx context.Context, sel ast.SelectionSet, v *model.AccessToken) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AccessToken(ctx, sel, v)
+}
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)

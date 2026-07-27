@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"strings"
 )
 
 const sessionCookieName = "kiosk_session"
@@ -35,8 +36,12 @@ func Middleware(issuer *TokenIssuer, secureCookies bool) func(http.Handler) http
 				secure: secureCookies,
 			})
 
-			if cookie, err := r.Cookie(sessionCookieName); err == nil {
-				if user, err := issuer.Parse(cookie.Value); err == nil {
+			// A browser sends the cookie it cannot read. A native app has no
+			// cookie jar worth relying on, so it carries the token itself
+			// and presents it here. Same token, same verification; only the
+			// way it travels differs.
+			if raw, ok := credential(r); ok {
+				if user, err := issuer.Parse(raw); err == nil {
 					ctx = NewContext(ctx, user)
 				}
 			}
@@ -44,6 +49,25 @@ func Middleware(issuer *TokenIssuer, secureCookies bool) func(http.Handler) http
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// credential finds the session token on the request: the cookie first,
+// because that is what a browser sends and what a browser cannot forge from
+// script, then an Authorization header for clients that hold the token
+// themselves.
+func credential(r *http.Request) (string, bool) {
+	if cookie, err := r.Cookie(sessionCookieName); err == nil && cookie.Value != "" {
+		return cookie.Value, true
+	}
+
+	header := r.Header.Get("Authorization")
+	// Case-insensitive: the scheme is defined that way, and clients differ.
+	if len(header) > 7 && strings.EqualFold(header[:7], "bearer ") {
+		if token := strings.TrimSpace(header[7:]); token != "" {
+			return token, true
+		}
+	}
+	return "", false
 }
 
 type cookieSession struct {

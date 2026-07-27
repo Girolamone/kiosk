@@ -3,11 +3,34 @@ package graph
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Girolamone/kiosk/apps/api/graph/model"
 	"github.com/Girolamone/kiosk/apps/api/internal/account"
 	"github.com/Girolamone/kiosk/apps/api/internal/auth"
 )
+
+// CreateAccessToken is the resolver for the createAccessToken field.
+func (r *mutationResolver) CreateAccessToken(ctx context.Context, email string, password string) (*model.AccessToken, error) {
+	user, err := r.Accounts.LogIn(ctx, email, password)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := r.Tokens.Issue(auth.User{ID: user.ID, Email: user.Email})
+	if err != nil {
+		return nil, err
+	}
+
+	// No cookie is set here. A caller asking for the token is telling us it
+	// keeps its own credential, and handing it both would leave a session
+	// behind that nothing ever ends.
+	return &model.AccessToken{
+		Token:     token,
+		ExpiresAt: time.Now().Add(r.Tokens.TTL()),
+		User:      toUser(user),
+	}, nil
+}
 
 // SignUp is the resolver for the signUp field.
 func (r *mutationResolver) SignUp(ctx context.Context, email string, password string) (*model.User, error) {

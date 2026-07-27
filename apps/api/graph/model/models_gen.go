@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+// A session token handed to the client to keep, for callers that have no
+// cookie jar. A browser should never ask for one: script that can read a
+// credential is script that can leak it.
+type AccessToken struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	User      *User     `json:"user"`
+}
+
 // A basket. Anonymous: it is identified by an unguessable token the client
 // keeps, not by a signed-in user, because most shoppers never sign in.
 //
