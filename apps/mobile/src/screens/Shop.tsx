@@ -1,9 +1,20 @@
 import { useState } from 'react'
-import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
-import { useQuery } from 'urql'
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
+import { useMutation, useQuery } from 'urql'
 import {
   MyStoresDocument,
+  ProductStatus,
   StoreProductsDocument,
+  UpdateProductDocument,
   formatMoney,
   type ProductCardFragment,
 } from '@kiosk/shared'
@@ -25,7 +36,21 @@ export function Shop({ onSignOut }: { onSignOut: () => void }) {
     pause: !store,
   })
 
+  const [{ fetching: updating }, updateProduct] = useMutation(UpdateProductDocument)
+  // Which row is mid-flight, so only that button shows a spinner rather than
+  // every row going busy at once.
+  const [changing, setChanging] = useState<string | null>(null)
+
   const reload = () => refetch({ requestPolicy: 'network-only' })
+
+  async function togglePublished(product: ProductCardFragment) {
+    setChanging(product.id)
+    const next =
+      product.status === ProductStatus.Active ? ProductStatus.Draft : ProductStatus.Active
+    const result = await updateProduct({ input: { id: product.id, status: next } })
+    setChanging(null)
+    if (!result.error) reload()
+  }
 
   if (loadingStores) {
     return (
@@ -105,7 +130,15 @@ export function Shop({ onSignOut }: { onSignOut: () => void }) {
             Nothing here yet. Photograph something to start.
           </Text>
         }
-        renderItem={({ item }) => <ProductRow product={item} currency={store.currency} />}
+        renderItem={({ item }) => (
+          <ProductRow
+            product={item}
+            currency={store.currency}
+            busy={updating && changing === item.id}
+            disabled={updating}
+            onTogglePublished={() => togglePublished(item)}
+          />
+        )}
       />
 
       <View style={styles.footer}>
@@ -115,8 +148,22 @@ export function Shop({ onSignOut }: { onSignOut: () => void }) {
   )
 }
 
-function ProductRow({ product, currency }: { product: ProductCardFragment; currency: string }) {
+function ProductRow({
+  product,
+  currency,
+  busy,
+  disabled,
+  onTogglePublished,
+}: {
+  product: ProductCardFragment
+  currency: string
+  busy: boolean
+  disabled: boolean
+  onTogglePublished: () => void
+}) {
   const image = product.images[0]
+  const live = product.status === ProductStatus.Active
+
   return (
     <View style={styles.row}>
       {image ? (
@@ -125,18 +172,37 @@ function ProductRow({ product, currency }: { product: ProductCardFragment; curre
         <View style={[styles.thumb, styles.thumbEmpty]} />
       )}
 
-      <View style={{ flex: 1, marginLeft: spacing.md }}>
+      <View style={{ flex: 1, marginHorizontal: spacing.md }}>
         <Text style={styles.rowTitle} numberOfLines={1}>
           {product.name}
         </Text>
         <Text style={styles.muted}>{formatMoney(product.priceCents, currency)}</Text>
+        <Text style={[styles.status, live && styles.statusLive]}>
+          {live ? 'On the shop' : 'Draft'}
+        </Text>
       </View>
 
-      {product.status === 'DRAFT' && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Draft</Text>
-        </View>
-      )}
+      <Pressable
+        onPress={onTogglePublished}
+        disabled={disabled}
+        hitSlop={8}
+        style={({ pressed }) => [
+          styles.action,
+          live && styles.actionQuiet,
+          (pressed || disabled) && { opacity: 0.6 },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={live ? `Unpublish ${product.name}` : `Publish ${product.name}`}
+        accessibilityState={{ busy, disabled }}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color={live ? colors.muted : '#fff'} />
+        ) : (
+          <Text style={[styles.actionText, live && styles.actionTextQuiet]}>
+            {live ? 'Unpublish' : 'Publish'}
+          </Text>
+        )}
+      </Pressable>
     </View>
   )
 }
@@ -167,13 +233,21 @@ const styles = StyleSheet.create({
   thumbEmpty: { borderWidth: 1, borderColor: colors.line },
   rowTitle: { fontSize: 16, color: colors.ink, marginBottom: 2 },
 
-  badge: {
-    backgroundColor: colors.accentSoft,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
+  status: { fontSize: 12, color: colors.muted, marginTop: 3 },
+  statusLive: { color: colors.accent },
+
+  action: {
+    minWidth: 88,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeText: { color: colors.accent, fontSize: 11, fontWeight: '600' },
+  actionQuiet: { backgroundColor: colors.raised, borderWidth: 1, borderColor: colors.line },
+  actionText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  actionTextQuiet: { color: colors.muted },
 
   footer: {
     padding: spacing.lg,
