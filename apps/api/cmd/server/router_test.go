@@ -57,10 +57,10 @@ func TestHealthIsReachable(t *testing.T) {
 	router := newRouter(testRoutes(t, config.Config{}))
 
 	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/healthz", nil))
 
 	if recorder.Code != http.StatusOK {
-		t.Errorf("GET /healthz = %d, want 200", recorder.Code)
+		t.Errorf("GET /api/healthz = %d, want 200", recorder.Code)
 	}
 }
 

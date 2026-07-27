@@ -226,7 +226,11 @@ func newRouter(r routes) http.Handler {
 	// No session middleware: Stripe is the caller, and it authenticates with
 	// a signature rather than a cookie.
 	mux.Handle("POST /api/stripe/webhook", httpapi.StripeWebhook(r.gateway, r.baskets, r.logger))
-	mux.Handle("GET /healthz", r.health)
+	// Under /api and not at /healthz: Google's frontend swallows that exact
+	// path on Cloud Run and answers its own 404, so the request never
+	// reaches this process. Verified - every other path, /healthz/ with a
+	// trailing slash included, arrives fine.
+	mux.Handle("GET /api/healthz", r.health)
 
 	// With the local driver the API serves the files it stored. With GCS the
 	// bucket serves them and this route does not exist.
