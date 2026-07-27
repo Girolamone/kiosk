@@ -1,0 +1,15 @@
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TYPE IF EXISTS order_status;
+
+DROP TABLE IF EXISTS cart_items;
+DROP TABLE IF EXISTS carts;
+
+DROP TABLE IF EXISTS product_images;
+DROP TABLE IF EXISTS products;
+DROP TYPE IF EXISTS product_status;
+
+DROP TABLE IF EXISTS stores;
+DROP TABLE IF EXISTS users;
+
+DROP FUNCTION IF EXISTS set_updated_at();
