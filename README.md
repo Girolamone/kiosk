@@ -209,6 +209,11 @@ cd apps/mobile
 npx expo start          # scan the QR code with Expo Go
 ```
 
+Built against **Expo SDK 54**, which is what the Expo Go currently on the app
+stores supports. Expo Go carries one SDK at a time and is not backwards
+compatible, so a project ahead of it will not open — the version listed as
+released by Expo is not necessarily the version published to the stores.
+
 It talks to the deployed API by default; `EXPO_PUBLIC_API_URL` points it
 somewhere else. Sign in with the demo account above.
 

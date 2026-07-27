@@ -4,18 +4,18 @@
   "main": "index.ts",
   "dependencies": {
     "@kiosk/shared": "*",
-    "expo": "~56.0.0",
-    "expo-image-picker": "~56.0.22",
-    "expo-secure-store": "~56.0.4",
-    "expo-status-bar": "~56.0.4",
+    "expo": "~54.0.0",
+    "expo-image-picker": "~17.0.11",
+    "expo-secure-store": "~15.0.8",
+    "expo-status-bar": "~3.0.9",
     "graphql": "^16.9.0",
-    "react": "19.2.3",
-    "react-native": "0.85.3",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
     "urql": "^4.2.1"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",
