@@ -141,7 +141,11 @@ function ProductTile({
   return (
     <li className={`group ${wide ? 'sm:col-span-4' : 'sm:col-span-2'}`}>
       <Link to={`/s/${slug}/p/${product.id}`} className="block">
-        <div className={`overflow-hidden bg-white ${wide ? 'aspect-16/10' : 'aspect-4/5'}`}>
+        {/* One height for every print, whatever its column span. Mixed
+            aspect ratios pushed the captions of neighbouring tiles to
+            different heights, which reads as a mistake rather than a
+            rhythm. A wide print is a wider crop, not a taller one. */}
+        <div className="h-[26rem] overflow-hidden bg-raised">
           {image ? (
             <img
               src={image.url}

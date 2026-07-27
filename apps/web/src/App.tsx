@@ -2,6 +2,7 @@ import { Link, Route, Routes, useMatch, useNavigate } from 'react-router'
 import { useLogOut, useSession } from './lib/session'
 import { CartProvider } from './lib/cart'
 import { useCart } from './lib/cart-context'
+import { useTheme } from './lib/theme'
 import { Button } from './components/ui'
 import { Home } from './routes/Home'
 import { Storefront } from './routes/Storefront'
@@ -54,6 +55,8 @@ function Header() {
         </Link>
 
         <nav className="flex items-center gap-4 text-sm">
+          <ThemeToggle />
+
           {slug && itemCount > 0 && (
             <Link
               to={`/s/${slug}`}
@@ -82,6 +85,45 @@ function Header() {
         </nav>
       </div>
     </header>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+  const goingDark = theme === 'light'
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      // The label says what pressing it does, not what the state is. A
+      // screen reader reading "light" cannot tell which of the two that is.
+      aria-label={goingDark ? 'Switch to dark' : 'Switch to light'}
+      title={goingDark ? 'Switch to dark' : 'Switch to light'}
+      className="rounded-full p-2 text-muted transition-colors hover:bg-accent-soft hover:text-ink"
+    >
+      {/* Nudged down a pixel. The icon is centred exactly, but lowercase
+          text reads lower than its box, so a geometrically centred icon
+          looks high beside it. */}
+      <span className="block translate-y-px">{goingDark ? <MoonIcon /> : <SunIcon />}</span>
+    </button>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" strokeLinecap="round" />
+    </svg>
   )
 }
 

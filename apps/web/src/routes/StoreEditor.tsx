@@ -161,7 +161,7 @@ function NewProductForm({
 
       <form onSubmit={submit} className="mt-5 grid gap-6 sm:grid-cols-[200px_1fr]">
         <div>
-          <div className="aspect-square overflow-hidden rounded-lg border border-dashed border-line bg-white">
+          <div className="aspect-square overflow-hidden rounded-lg border border-dashed border-line bg-raised">
             {image ? (
               <img src={image.url} alt="" className="size-full object-cover" />
             ) : (
@@ -180,7 +180,7 @@ function NewProductForm({
                 const file = e.target.files?.[0]
                 if (file) void pickImage(file)
               }}
-              className="block w-full text-xs text-muted file:mr-2 file:rounded-md file:border file:border-line file:bg-white file:px-3 file:py-1.5 file:text-xs file:text-ink"
+              className="block w-full text-xs text-muted file:mr-2 file:rounded-md file:border file:border-line file:bg-raised file:px-3 file:py-1.5 file:text-xs file:text-ink"
             />
           </label>
 

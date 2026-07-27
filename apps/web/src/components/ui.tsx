@@ -13,7 +13,7 @@ export function Button({ variant = 'primary', busy, children, className = '', ..
     // Solid, not outlined. This is the one thing on the page that has to be
     // unmistakably clickable.
     primary: 'bg-accent text-white shadow-sm hover:bg-accent-hover hover:-translate-y-px active:translate-y-0',
-    secondary: 'border border-line bg-white text-ink hover:border-accent hover:bg-accent-soft',
+    secondary: 'border border-line bg-raised text-ink hover:border-accent hover:bg-accent-soft',
     ghost: 'text-muted hover:text-ink',
   }[variant]
 
@@ -54,7 +54,7 @@ export function Field({
 }
 
 const fieldStyles =
-  'w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink transition-colors ' +
+  'w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink transition-colors ' +
   'placeholder:text-muted/60 focus:border-accent'
 
 export function Input({ className = '', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
@@ -72,14 +72,17 @@ export function Textarea({ className = '', ...rest }: TextareaHTMLAttributes<HTM
 export function ErrorNote({ children }: { children: ReactNode }) {
   if (!children) return null
   return (
-    <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+    <p
+      role="alert"
+      className="rounded-md border border-red-600/25 bg-red-600/10 px-3 py-2 text-sm text-red-700 dark:text-red-300"
+    >
       {children}
     </p>
   )
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-lg border border-line bg-white ${className}`}>{children}</div>
+  return <div className={`rounded-lg border border-line bg-raised ${className}`}>{children}</div>
 }
 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {

@@ -1,29 +1,94 @@
 @import 'tailwindcss';
 
-@theme {
+/* Tailwind's dark: variant follows the operating system by default. Point it
+   at the attribute instead, so the toggle actually drives it. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Colours are declared as plain custom properties and only then handed to
+ * Tailwind, because a theme that switches at runtime cannot be baked in at
+ * build time. @theme inline makes Tailwind emit var() references rather than
+ * resolved values, so flipping data-theme on <html> repaints the whole app.
+ */
+:root {
+  /* Warm neutrals rather than pure grey, so photography sits on something
+     that reads as paper instead of a screenshot. */
+  --c-paper: #faf8f5;
+  --c-raised: #ffffff;
+  --c-ink: #1a1a18;
+  --c-muted: #6f6a63;
+  --c-line: #e4dfd7;
+
+  /* The chrome stays quiet because the photographs are the content. The
+     colour is spent on the one thing that has to be obvious: the buttons. */
+  --c-accent: #1c5c47;
+  --c-accent-hover: #164838;
+  --c-accent-soft: #e8f0ec;
+
+  --c-dark: #16150f;
+}
+
+:root[data-theme='dark'] {
+  /* Not inverted greys. The same warmth carried into the dark, so
+     photographs sit on it without the page looking blue. */
+  --c-paper: #14130f;
+  --c-raised: #1c1b16;
+  --c-ink: #f2efe7;
+  --c-muted: #9c968a;
+  --c-line: #2e2c24;
+
+  /* Lifted, because the dark green that reads as confident on paper
+     disappears against a dark ground. */
+  --c-accent: #4c9c7c;
+  --c-accent-hover: #5cae8c;
+  --c-accent-soft: #1e2a24;
+
+  --c-dark: #0b0a07;
+}
+
+@theme inline {
   --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* Mono carries the numbers, labels and plate marks. It is what makes the
-     page read as a catalogue rather than a product grid. */
+  /* Mono carries the numbers, labels and plate marks. It is most of what
+     makes the page read as a catalogue rather than a product grid. */
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 
-  /* Warm neutrals rather than pure grey, so product photography sits on
-     something that reads as paper instead of a screenshot. */
-  --color-paper: #faf8f5;
-  --color-ink: #1a1a18;
-  --color-muted: #6f6a63;
-  --color-line: #e4dfd7;
+  --color-paper: var(--c-paper);
+  --color-raised: var(--c-raised);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-dark: var(--c-dark);
+}
 
-  /* The chrome stays quiet because the photographs are the content — a
-     louder interface would compete with what people came to look at. The
-     colour is spent on the one thing that has to be obvious: the buttons. */
-  --color-accent: #1c5c47;
-  --color-accent-hover: #164838;
-  --color-accent-soft: #e8f0ec;
+/*
+ * The fade only exists while the theme is actually being switched.
+ * A permanent transition on every element would smear unrelated repaints -
+ * hover states, focus rings, anything that changes colour - and cost paint
+ * work on every frame for an effect that is wanted twice a session.
+ */
+:root[data-theme-transition],
+:root[data-theme-transition] *,
+:root[data-theme-transition] *::before,
+:root[data-theme-transition] *::after {
+  transition:
+    background-color 280ms ease,
+    border-color 280ms ease,
+    color 280ms ease,
+    fill 280ms ease !important;
+  /* Transforms are excluded on purpose: an image mid-hover would otherwise
+     animate its scale as a side effect of pressing the theme button. */
+  transition-property: background-color, border-color, color, fill !important;
+}
 
-  /* A near-black that is warm rather than neutral, so the dark band belongs
-     to the same page as the paper instead of looking pasted on. */
-  --color-dark: #16150f;
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme-transition],
+  :root[data-theme-transition] * {
+    transition: none !important;
+  }
 }
 
 @layer components {
@@ -42,6 +107,13 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
+    /* Tells the browser to render its own widgets - scrollbars, form
+       controls - to match. Without it a dark page keeps a white scrollbar. */
+    color-scheme: light;
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
   }
 
   body {

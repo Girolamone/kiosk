@@ -55,7 +55,7 @@ export function ProductDetail() {
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
-        <div className="overflow-hidden rounded-lg border border-line bg-white">
+        <div className="overflow-hidden rounded-lg border border-line bg-raised">
           {image ? (
             <img
               src={image.url}
@@ -89,7 +89,7 @@ export function ProductDetail() {
             {inCart > 0 && (
               <Link
                 to={`/s/${slug}`}
-                className="block rounded-md border border-line bg-white px-4 py-2.5 text-center text-sm font-medium transition-colors hover:border-accent hover:bg-accent-soft"
+                className="block rounded-md border border-line bg-raised px-4 py-2.5 text-center text-sm font-medium transition-colors hover:border-accent hover:bg-accent-soft"
               >
                 Go to basket
               </Link>
