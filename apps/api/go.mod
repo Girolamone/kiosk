@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/joho/godotenv v1.5.1
 	github.com/vektah/gqlparser/v2 v2.5.36
+	github.com/vikstrous/dataloadgen v0.0.10
 	golang.org/x/crypto v0.45.0
 )
 
@@ -25,7 +26,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/sosodev/duration v1.4.0 // indirect
 	github.com/urfave/cli/v3 v3.10.1 // indirect
-	github.com/vikstrous/dataloadgen v0.0.10 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect

@@ -29,6 +29,11 @@ jobs:
             exit 1
           fi
 
+      - name: Check go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
       - name: Vet
         run: go vet ./...
 
@@ -38,11 +43,13 @@ jobs:
       - name: Test
         run: go test ./...
 
+      # Scoped to graph/, which is what gqlgen owns. A wider diff would also
+      # catch module changes and report them as stale generated code.
       - name: Check generated code is current
         run: |
           go tool gqlgen generate
-          if ! git diff --quiet; then
+          if ! git diff --quiet -- graph/; then
             echo "Generated code is stale. Run: go tool gqlgen generate"
-            git diff --stat
+            git diff --stat -- graph/
             exit 1
           fi
