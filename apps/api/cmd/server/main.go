@@ -105,6 +105,12 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	sessions := auth.Middleware(tokens, cfg.IsProduction())
 	batching := loaders.Middleware(products)
 
+	defer func() {
+		if closer, ok := files.(interface{ Close() error }); ok {
+			_ = closer.Close()
+		}
+	}()
+
 	mux := http.NewServeMux()
 	mux.Handle("/graphql", sessions(batching(newGraphQLHandler(resolver))))
 	mux.Handle("POST /api/uploads", sessions(httpapi.Upload(files, logger)))
@@ -116,6 +122,18 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	// bucket serves them and this route does not exist.
 	if local, ok := files.(*storage.Local); ok {
 		mux.Handle("GET /uploads/", local.Handler())
+	}
+
+	if cfg.WebDir != "" {
+		// In production one binary serves both the API and the app, so
+		// everything is one origin: no CORS, and the session cookie stays
+		// first-party.
+		mux.Handle("/", httpapi.SPA(cfg.WebDir))
+		mux.Handle("GET /playground", playground.Handler("Kiosk API", "/graphql"))
+		logger.Info("serving the web app", "dir", cfg.WebDir)
+	} else {
+		// API-only: the Vite dev server is serving the app.
+		mux.Handle("/", playground.Handler("Kiosk API", "/graphql"))
 	}
 	mux.Handle("GET /healthz", healthHandler(pool))
 	// The playground is intentionally public: this is a demo, and being able
@@ -190,7 +208,7 @@ func newStorage(cfg config.Config) (storage.Store, error) {
 	case "local":
 		return storage.NewLocal(cfg.LocalStorageDir, "/uploads")
 	case "gcs":
-		return nil, fmt.Errorf("the gcs driver is not implemented yet")
+		return storage.NewGCS(context.Background(), cfg.GCSBucket)
 	default:
 		return nil, fmt.Errorf("unknown STORAGE_DRIVER %q: want \"local\" or \"gcs\"", cfg.StorageDriver)
 	}

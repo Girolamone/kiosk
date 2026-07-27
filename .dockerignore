@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.expo
+apps/api/bin
+apps/api/tmp
+apps/api/uploads
+
+.git
+.github
+.env
+.env.local
+*.md
+
+.vscode
+.idea

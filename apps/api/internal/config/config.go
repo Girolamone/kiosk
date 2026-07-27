@@ -29,6 +29,11 @@ type Config struct {
 	StripeSecretKey     string
 	StripeWebhookSecret string
 
+	// WebDir is the built React app. Set in production, where one binary
+	// serves both the app and the API from a single origin. Empty in
+	// development, where the Vite dev server does it.
+	WebDir string
+
 	// LogSQL prints every statement the pool runs. Development only: it is
 	// how you see an N+1 rather than guess at one.
 	LogSQL bool
@@ -54,6 +59,7 @@ func Load() (Config, error) {
 		LocalStorageDir: envOr("LOCAL_STORAGE_DIR", "./uploads"),
 		GCSBucket:       os.Getenv("GCS_BUCKET"),
 		GeminiModel:     envOr("GEMINI_MODEL", "gemini-flash-latest"),
+		WebDir:          os.Getenv("WEB_DIR"),
 		LogSQL:          os.Getenv("LOG_SQL") == "true",
 
 		// In development the browser talks to the Vite dev server, which
