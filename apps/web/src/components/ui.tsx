@@ -7,10 +7,13 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ variant = 'primary', busy, children, className = '', ...rest }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed'
+    'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium ' +
+    'transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'
   const styles = {
-    primary: 'bg-accent text-white hover:bg-accent/90',
-    secondary: 'border border-line bg-white text-ink hover:bg-accent-soft',
+    // Solid, not outlined. This is the one thing on the page that has to be
+    // unmistakably clickable.
+    primary: 'bg-accent text-white shadow-sm hover:bg-accent-hover hover:-translate-y-px active:translate-y-0',
+    secondary: 'border border-line bg-white text-ink hover:border-accent hover:bg-accent-soft',
     ghost: 'text-muted hover:text-ink',
   }[variant]
 
@@ -51,7 +54,8 @@ export function Field({
 }
 
 const fieldStyles =
-  'w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60'
+  'w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink transition-colors ' +
+  'placeholder:text-muted/60 focus:border-accent'
 
 export function Input({ className = '', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${fieldStyles} ${className}`} {...rest} />

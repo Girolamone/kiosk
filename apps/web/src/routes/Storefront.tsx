@@ -1,9 +1,9 @@
-import { useSearchParams, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { useQuery } from 'urql'
 import { StorefrontDocument, formatMoney, type ProductCardFragment } from '@kiosk/shared'
 import { Button, Empty, Spinner } from '../components/ui'
 import { CartPanel } from '../components/CartPanel'
-import { useCart } from '../lib/cart'
+import { useCart } from '../lib/cart-context'
 
 export function Storefront() {
   const { slug = '' } = useParams()
@@ -14,7 +14,7 @@ export function Storefront() {
     query: StorefrontDocument,
     variables: { slug },
   })
-  const { cart, busy, setQuantity } = useCart(slug)
+  const { cart, busy, setQuantity } = useCart()
 
   if (fetching && !data) {
     return (
@@ -39,34 +39,37 @@ export function Storefront() {
 
   return (
     <div>
-      <header className="border-b border-line pb-8">
-        <h1 className="text-4xl">{store.name}</h1>
-        {store.description && <p className="mt-2 max-w-xl text-muted">{store.description}</p>}
+      <header className="border-b border-line pb-10">
+        <h1 className="text-5xl">{store.name}</h1>
+        {store.description && (
+          <p className="mt-3 max-w-xl text-lg text-muted">{store.description}</p>
+        )}
       </header>
 
       {justPaid && (
-        <p className="mt-8 rounded-md bg-accent-soft px-4 py-3 text-sm">
+        <p className="mt-8 rounded-md bg-accent-soft px-4 py-3 text-sm text-accent">
           Thank you, your order is on its way. A receipt is in your inbox.
         </p>
       )}
 
-      <div className="mt-8">
+      <div className="mt-10">
         {cart && cart.items.length > 0 && (
           <CartPanel cart={cart} busy={busy} onSetQuantity={setQuantity} />
         )}
       </div>
 
       {store.products.length === 0 ? (
-        <div className="mt-8">
+        <div className="mt-10">
           <Empty title="Nothing for sale yet">
             The shop exists but has not published anything.
           </Empty>
         </div>
       ) : (
-        <ul className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
           {store.products.map((product) => (
             <ProductTile
               key={product.id}
+              slug={slug}
               product={product}
               currency={store.currency}
               inCart={cart?.items.find((item) => item.productId === product.id)?.quantity ?? 0}
@@ -81,12 +84,14 @@ export function Storefront() {
 }
 
 function ProductTile({
+  slug,
   product,
   currency,
   inCart,
   busy,
   onAdd,
 }: {
+  slug: string
   product: ProductCardFragment
   currency: string
   inCart: number
@@ -96,41 +101,46 @@ function ProductTile({
   const image = product.images[0]
 
   return (
-    <li>
-      <div className="aspect-square overflow-hidden rounded-lg border border-line bg-white">
-        {image ? (
-          <img
-            src={image.url}
-            // The generated alt text lands here. An empty string would be
-            // wrong: this image carries meaning, so it needs a description.
-            alt={image.altText || product.name}
-            className="size-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center text-sm text-muted">
-            No photo
-          </div>
-        )}
-      </div>
+    <li className="group">
+      <Link to={`/s/${slug}/p/${product.id}`} className="block">
+        <div className="aspect-4/5 overflow-hidden rounded-lg border border-line bg-white">
+          {image ? (
+            <img
+              src={image.url}
+              // The generated alt text lands here. An empty string would be
+              // wrong: this image carries meaning, so it needs a description.
+              alt={image.altText || product.name}
+              className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center text-sm text-muted">
+              No photo
+            </div>
+          )}
+        </div>
 
-      <div className="mt-3 flex items-baseline justify-between gap-3">
-        <h2 className="text-lg leading-snug">{product.name}</h2>
-        <span className="shrink-0 text-sm tabular-nums text-muted">
-          {formatMoney(product.priceCents, currency)}
-        </span>
-      </div>
-      {product.description && (
-        <p className="mt-1 line-clamp-3 text-sm text-muted">{product.description}</p>
-      )}
+        <div className="mt-4 flex items-baseline justify-between gap-3">
+          <h2 className="text-xl leading-snug transition-colors group-hover:text-accent">
+            {product.name}
+          </h2>
+          <span className="shrink-0 tabular-nums text-muted">
+            {formatMoney(product.priceCents, currency)}
+          </span>
+        </div>
+
+        {product.description && (
+          <p className="mt-1.5 line-clamp-2 text-sm text-muted">{product.description}</p>
+        )}
+      </Link>
 
       <Button
-        variant="secondary"
-        className="mt-3 w-full"
+        variant={inCart > 0 ? 'secondary' : 'primary'}
+        className="mt-4 w-full"
         disabled={busy}
         onClick={() => onAdd(inCart + 1)}
       >
-        {inCart > 0 ? `In basket (${inCart})` : 'Add to basket'}
+        {inCart > 0 ? `In basket (${inCart}) — add another` : 'Add to basket'}
       </Button>
     </li>
   )

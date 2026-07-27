@@ -10,8 +10,13 @@
   --color-ink: #1a1a18;
   --color-muted: #6f6a63;
   --color-line: #e4dfd7;
-  --color-accent: #1f4d3f;
-  --color-accent-soft: #eaf0ed;
+
+  /* The chrome stays quiet because the photographs are the content — a
+     louder interface would compete with what people came to look at. The
+     colour is spent on the one thing that has to be obvious: the buttons. */
+  --color-accent: #1c5c47;
+  --color-accent-hover: #164838;
+  --color-accent-soft: #e8f0ec;
 }
 
 @layer base {
