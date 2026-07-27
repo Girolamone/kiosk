@@ -1,0 +1,12 @@
+{
+  "name": "kiosk",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}

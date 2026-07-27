@@ -1,0 +1,31 @@
+# Environment
+.env
+.env.local
+*.local
+
+# Go
+apps/api/bin/
+apps/api/tmp/
+*.exe
+
+# Node
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# Expo
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Local uploads (dev image storage driver)
+apps/api/uploads/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
