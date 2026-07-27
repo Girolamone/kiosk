@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	Environment   string
 	DatabaseURL   string
 	Port          string
 	JWTSecret     string
@@ -19,6 +20,10 @@ type Config struct {
 	GCSBucket     string
 }
 
+// IsProduction drives anything that has to behave differently once real
+// traffic and real browsers are involved, starting with Secure cookies.
+func (c Config) IsProduction() bool { return c.Environment == "production" }
+
 // Load reads configuration and fails if anything required is missing, so a
 // misconfigured deploy dies at startup instead of on the first request that
 // happens to need the value.
@@ -26,6 +31,7 @@ func Load() (Config, error) {
 	LoadDotEnv()
 
 	cfg := Config{
+		Environment:   envOr("ENVIRONMENT", "development"),
 		DatabaseURL:   os.Getenv("DATABASE_URL"),
 		Port:          envOr("PORT", "8080"),
 		JWTSecret:     os.Getenv("JWT_SECRET"),

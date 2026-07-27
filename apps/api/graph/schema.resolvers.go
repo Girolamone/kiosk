@@ -115,6 +115,22 @@ func (r *queryResolver) Product(ctx context.Context, id string) (*model.Product,
 	return toProduct(product), nil
 }
 
+// MyStores is the resolver for the myStores field.
+func (r *queryResolver) MyStores(ctx context.Context) ([]*model.Store, error) {
+	user, ok := auth.FromContext(ctx)
+	if !ok {
+		// An anonymous caller owns nothing. That is an empty list, not an
+		// error: the dashboard renders the same way before and after sign-in.
+		return []*model.Store{}, nil
+	}
+
+	stores, err := r.Catalog.StoresByOwner(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	return toStores(stores), nil
+}
+
 // Products is the resolver for the products field.
 func (r *storeResolver) Products(ctx context.Context, obj *model.Store, status *model.ProductStatus) ([]*model.Product, error) {
 	filter := catalog.StatusActive
@@ -137,38 +153,6 @@ func (r *storeResolver) Products(ctx context.Context, obj *model.Store, status *
 		return nil, err
 	}
 	return toProducts(products), nil
-}
-
-// errNoSuchProduct is returned both when a product does not exist and when it
-// belongs to somebody else. Distinguishing the two would let a caller probe
-// for ids that exist but are not theirs.
-var errNoSuchProduct = errors.New("no such product")
-
-// requireStoreOwner checks that the caller is signed in and owns the store.
-func (r *Resolver) requireStoreOwner(ctx context.Context, storeID string) error {
-	user, err := auth.RequireUser(ctx)
-	if err != nil {
-		return err
-	}
-
-	store, err := r.Catalog.StoreByID(ctx, storeID)
-	if errors.Is(err, catalog.ErrNotFound) {
-		return errors.New("no such store")
-	}
-	if err != nil {
-		return err
-	}
-	if store.OwnerID != user.ID {
-		return errors.New("no such store")
-	}
-	return nil
-}
-
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 // Mutation returns MutationResolver implementation.

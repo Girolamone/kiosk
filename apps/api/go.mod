@@ -4,10 +4,12 @@ go 1.26.5
 
 require (
 	github.com/99designs/gqlgen v0.17.94
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/joho/godotenv v1.5.1
 	github.com/vektah/gqlparser/v2 v2.5.36
+	golang.org/x/crypto v0.45.0
 )
 
 require (
@@ -23,7 +25,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/sosodev/duration v1.4.0 // indirect
 	github.com/urfave/cli/v3 v3.10.1 // indirect
-	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.40.0 // indirect

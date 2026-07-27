@@ -18,10 +18,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Girolamone/kiosk/apps/api/graph"
+	"github.com/Girolamone/kiosk/apps/api/internal/account"
+	"github.com/Girolamone/kiosk/apps/api/internal/auth"
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
 	"github.com/Girolamone/kiosk/apps/api/internal/config"
 	"github.com/Girolamone/kiosk/apps/api/internal/db"
 )
+
+// How long a session survives before the user has to sign in again.
+const sessionTTL = 7 * 24 * time.Hour
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -56,10 +61,17 @@ func run(logger *slog.Logger) error {
 	}
 	defer pool.Close()
 
-	resolver := &graph.Resolver{Catalog: catalog.NewRepository(pool)}
+	tokens := auth.NewTokenIssuer(cfg.JWTSecret, sessionTTL)
+	resolver := &graph.Resolver{
+		Catalog:  catalog.NewRepository(pool),
+		Accounts: account.NewService(account.NewRepository(pool)),
+		Tokens:   tokens,
+	}
+
+	sessions := auth.Middleware(tokens, cfg.IsProduction())
 
 	mux := http.NewServeMux()
-	mux.Handle("/graphql", newGraphQLHandler(resolver))
+	mux.Handle("/graphql", sessions(newGraphQLHandler(resolver)))
 	mux.Handle("GET /healthz", healthHandler(pool))
 	// The playground is intentionally public: this is a demo, and being able
 	// to explore the schema is the point.

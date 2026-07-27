@@ -2,6 +2,7 @@ package graph
 
 import (
 	"github.com/Girolamone/kiosk/apps/api/graph/model"
+	"github.com/Girolamone/kiosk/apps/api/internal/account"
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
 )
 
@@ -9,6 +10,16 @@ import (
 // the database (lowercase enum values, storage-shaped fields); the API follows
 // GraphQL convention. These functions are the only place the two meet, so
 // renaming a column never leaks into the public schema.
+
+// The password hash deliberately has no route into the API: model.User has no
+// field for it, so it cannot leak by accident.
+func toUser(u account.User) *model.User {
+	return &model.User{
+		ID:        u.ID,
+		Email:     u.Email,
+		CreatedAt: u.CreatedAt,
+	}
+}
 
 func toStore(s catalog.Store) *model.Store {
 	return &model.Store{
@@ -19,6 +30,14 @@ func toStore(s catalog.Store) *model.Store {
 		Currency:    s.Currency,
 		CreatedAt:   s.CreatedAt,
 	}
+}
+
+func toStores(ss []catalog.Store) []*model.Store {
+	out := make([]*model.Store, 0, len(ss))
+	for _, s := range ss {
+		out = append(out, toStore(s))
+	}
+	return out
 }
 
 func toProduct(p catalog.Product) *model.Product {

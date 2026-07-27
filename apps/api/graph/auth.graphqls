@@ -1,0 +1,23 @@
+type User {
+  id: ID!
+  email: String!
+  createdAt: Time!
+}
+
+extend type Query {
+  "The signed-in user, or null when the request is anonymous."
+  me: User
+}
+
+extend type Mutation {
+  """
+  Register and start a session. The session is a signed token in an HttpOnly
+  cookie, so it is never readable from JavaScript.
+  """
+  signUp(email: String!, password: String!): User!
+
+  logIn(email: String!, password: String!): User!
+
+  "Ends the session. Always returns true, including when nobody was signed in."
+  logOut: Boolean!
+}

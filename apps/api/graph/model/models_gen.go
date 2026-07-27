@@ -69,6 +69,12 @@ type UpdateProductInput struct {
 	Status      *ProductStatus `json:"status,omitempty"`
 }
 
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 type ProductStatus string
 
 const (

@@ -37,6 +37,28 @@ func (r *Repository) StoreByID(ctx context.Context, id string) (Store, error) {
 	return scanStore(row)
 }
 
+func (r *Repository) StoresByOwner(ctx context.Context, ownerID string) ([]Store, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT `+storeColumns+` FROM stores WHERE owner_id = $1::uuid ORDER BY created_at`, ownerID)
+	if err != nil {
+		return nil, fmt.Errorf("query stores: %w", err)
+	}
+	defer rows.Close()
+
+	var stores []Store
+	for rows.Next() {
+		s, err := scanStore(rows)
+		if err != nil {
+			return nil, err
+		}
+		stores = append(stores, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read stores: %w", err)
+	}
+	return stores, nil
+}
+
 func (r *Repository) CreateStore(ctx context.Context, s Store) (Store, error) {
 	row := r.pool.QueryRow(ctx, `
 		INSERT INTO stores (owner_id, name, slug, description, currency)
