@@ -34,6 +34,10 @@ description and alt text come back written. Every field stays editable, and
 the form still works when the model is unavailable — which is the point of
 the next section.
 
+**A seller's app for iOS and Android.** The same feature, but the photograph
+comes from the camera you are holding rather than a file you have to find
+first. Built on the same schema and the same generated client as the web app.
+
 ---
 
 ## Decisions worth reading
@@ -95,8 +99,8 @@ than a running server, so types regenerate offline and CI verifies they match
 without standing up a database. Rename a field in Go and TypeScript stops
 compiling.
 
-The package imports neither React nor the DOM, so a native app can depend on
-it unchanged. Nothing does yet — see below.
+The package imports neither React nor the DOM, which is what lets the mobile
+app depend on it unchanged.
 
 ### An N+1 that was measured, not guessed
 
@@ -144,9 +148,11 @@ an extension derived from the detected type.
 
 Being explicit about this is more useful than pretending otherwise.
 
-- **No mobile app yet.** `packages/shared` is built so that one can be added
-  without duplication, and `apps/mobile` is an empty placeholder. The
-  "one codebase, two apps" claim is not yet earned.
+- **The mobile app is not on a store.** It runs through Expo Go from source,
+  and has been bundled but not shipped. What is shared between it and the web
+  app is the schema, the generated client and the business rules — not the
+  interface. Nobody writes one interface for both, and a README claiming
+  otherwise would be contradicted by two component folders.
 - **Orders are recorded, not fulfilled.** There is no seller order screen,
   no email, no shipping.
 - **Secrets are environment variables on Cloud Run,** not Secret Manager.
@@ -192,9 +198,26 @@ apps/api          Go: GraphQL API, migrations, seed
   internal/         account, ai, auth, catalog, db, httpapi,
                     loaders, orders, payments, storage
 apps/web          React: storefront and seller dashboard
-apps/mobile       empty, reserved
+apps/mobile       Expo: the seller's app, iOS and Android
 packages/shared   generated types, operations, GraphQL client
 ```
+
+### The mobile app
+
+```sh
+cd apps/mobile
+npx expo start          # scan the QR code with Expo Go
+```
+
+It talks to the deployed API by default; `EXPO_PUBLIC_API_URL` points it
+somewhere else. Sign in with the demo account above.
+
+Authentication differs from the web on purpose. A browser is handed a token
+in a cookie it cannot read, which is what stops a cross-site scripting bug
+stealing the session. A native app has no such protection to lose and no
+cookie jar worth relying on, so it asks for the token directly, keeps it in
+the keychain, and sends it as a bearer header. Same token, same verification;
+only the way it travels differs.
 
 ### Deployment
 

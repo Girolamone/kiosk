@@ -29,3 +29,7 @@ apps/api/uploads/
 .vscode/
 .idea/
 .DS_Store
+
+# Expo
+apps/mobile/.expo
+apps/mobile/dist

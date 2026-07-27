@@ -1,0 +1,9 @@
+mutation CreateAccessToken($email: String!, $password: String!) {
+  createAccessToken(email: $email, password: $password) {
+    token
+    expiresAt
+    user {
+      ...CurrentUser
+    }
+  }
+}
