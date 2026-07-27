@@ -1,0 +1,78 @@
+scalar Time
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+type Store {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String!
+  currency: String!
+  createdAt: Time!
+
+  "Products in this store. Omit `status` on a public storefront to get only ACTIVE ones."
+  products(status: ProductStatus): [Product!]!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String!
+
+  """
+  Price in the smallest currency unit (cents). Integer on purpose: floating
+  point cannot represent 0.10 exactly, and the error compounds across a cart.
+  Clients format it for display.
+  """
+  priceCents: Int!
+
+  status: ProductStatus!
+  images: [ProductImage!]!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type ProductImage {
+  id: ID!
+  url: String!
+  altText: String!
+  position: Int!
+}
+
+input CreateStoreInput {
+  name: String!
+  slug: String!
+  description: String
+}
+
+input CreateProductInput {
+  storeId: ID!
+  name: String!
+  description: String
+  priceCents: Int!
+}
+
+input UpdateProductInput {
+  id: ID!
+  name: String
+  description: String
+  priceCents: Int
+  status: ProductStatus
+}
+
+type Query {
+  "A public storefront, addressed by its slug."
+  store(slug: String!): Store
+
+  product(id: ID!): Product
+}
+
+type Mutation {
+  createStore(input: CreateStoreInput!): Store!
+  createProduct(input: CreateProductInput!): Product!
+  updateProduct(input: UpdateProductInput!): Product!
+}

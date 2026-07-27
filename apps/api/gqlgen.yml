@@ -1,0 +1,41 @@
+schema:
+  - graph/*.graphqls
+
+exec:
+  filename: graph/generated.go
+  package: graph
+
+model:
+  filename: graph/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: graph
+  package: graph
+  filename_template: "{name}.resolvers.go"
+
+omit_gqlgen_file_notice: true
+
+models:
+  # Force these onto field resolvers instead of plain struct fields: they hit
+  # the database, take arguments, and are where batching has to happen.
+  Store:
+    fields:
+      products:
+        resolver: true
+  Product:
+    fields:
+      images:
+        resolver: true
+
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int32
+  Time:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time
