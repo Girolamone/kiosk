@@ -41,12 +41,13 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		CreateProduct func(childComplexity int, input model.CreateProductInput) int
-		CreateStore   func(childComplexity int, input model.CreateStoreInput) int
-		LogIn         func(childComplexity int, email string, password string) int
-		LogOut        func(childComplexity int) int
-		SignUp        func(childComplexity int, email string, password string) int
-		UpdateProduct func(childComplexity int, input model.UpdateProductInput) int
+		CreateProduct       func(childComplexity int, input model.CreateProductInput) int
+		CreateStore         func(childComplexity int, input model.CreateStoreInput) int
+		GenerateProductCopy func(childComplexity int, imageKey string) int
+		LogIn               func(childComplexity int, email string, password string) int
+		LogOut              func(childComplexity int) int
+		SignUp              func(childComplexity int, email string, password string) int
+		UpdateProduct       func(childComplexity int, input model.UpdateProductInput) int
 	}
 
 	Product struct {
@@ -58,6 +59,12 @@ type ComplexityRoot struct {
 		PriceCents  func(childComplexity int) int
 		Status      func(childComplexity int) int
 		UpdatedAt   func(childComplexity int) int
+	}
+
+	ProductCopy struct {
+		AltText     func(childComplexity int) int
+		Description func(childComplexity int) int
+		Title       func(childComplexity int) int
 	}
 
 	ProductImage struct {
@@ -99,6 +106,7 @@ type MutationResolver interface {
 	CreateStore(ctx context.Context, input model.CreateStoreInput) (*model.Store, error)
 	CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.Product, error)
 	UpdateProduct(ctx context.Context, input model.UpdateProductInput) (*model.Product, error)
+	GenerateProductCopy(ctx context.Context, imageKey string) (*model.ProductCopy, error)
 	SignUp(ctx context.Context, email string, password string) (*model.User, error)
 	LogIn(ctx context.Context, email string, password string) (*model.User, error)
 	LogOut(ctx context.Context) (bool, error)
@@ -156,6 +164,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateStore(childComplexity, args["input"].(model.CreateStoreInput)), true
+	case "Mutation.generateProductCopy":
+		if e.ComplexityRoot.Mutation.GenerateProductCopy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_generateProductCopy_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.GenerateProductCopy(childComplexity, args["imageKey"].(string)), true
 	case "Mutation.logIn":
 		if e.ComplexityRoot.Mutation.LogIn == nil {
 			break
@@ -244,6 +263,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Product.UpdatedAt(childComplexity), true
+
+	case "ProductCopy.altText":
+		if e.ComplexityRoot.ProductCopy.AltText == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProductCopy.AltText(childComplexity), true
+	case "ProductCopy.description":
+		if e.ComplexityRoot.ProductCopy.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProductCopy.Description(childComplexity), true
+	case "ProductCopy.title":
+		if e.ComplexityRoot.ProductCopy.Title == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProductCopy.Title(childComplexity), true
 
 	case "ProductImage.altText":
 		if e.ComplexityRoot.ProductImage.AltText == nil {
@@ -457,7 +495,7 @@ func newExecutionContext(
 	}
 }
 
-//go:embed "auth.graphqls" "schema.graphqls"
+//go:embed "ai.graphqls" "auth.graphqls" "schema.graphqls"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -469,6 +507,7 @@ func sourceData(filename string) string {
 }
 
 var sources = []*ast.Source{
+	{Name: "ai.graphqls", Input: sourceData("ai.graphqls"), BuiltIn: false},
 	{Name: "auth.graphqls", Input: sourceData("auth.graphqls"), BuiltIn: false},
 	{Name: "schema.graphqls", Input: sourceData("schema.graphqls"), BuiltIn: false},
 }
@@ -498,6 +537,18 @@ func (ec *executionContext) childFields_Product(ctx context.Context, field graph
 		return ec.fieldContext_Product_updatedAt(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
+}
+
+func (ec *executionContext) childFields_ProductCopy(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "title":
+		return ec.fieldContext_ProductCopy_title(ctx, field)
+	case "description":
+		return ec.fieldContext_ProductCopy_description(ctx, field)
+	case "altText":
+		return ec.fieldContext_ProductCopy_altText(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ProductCopy", field.Name)
 }
 
 func (ec *executionContext) childFields_ProductImage(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -687,6 +738,20 @@ func (ec *executionContext) field_Mutation_createStore_args(ctx context.Context,
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_generateProductCopy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "imageKey",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["imageKey"] = arg0
 	return args, nil
 }
 
@@ -996,6 +1061,50 @@ func (ec *executionContext) fieldContext_Mutation_updateProduct(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_generateProductCopy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_generateProductCopy(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().GenerateProductCopy(ctx, fc.Args["imageKey"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ProductCopy) graphql.Marshaler {
+			return ec.marshalNProductCopy2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductCopy(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_generateProductCopy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ProductCopy(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_generateProductCopy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_signUp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1298,6 +1407,75 @@ func (ec *executionContext) _Product_updatedAt(ctx context.Context, field graphq
 }
 func (ec *executionContext) fieldContext_Product_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Product", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ProductCopy_title(ctx context.Context, field graphql.CollectedField, obj *model.ProductCopy) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProductCopy_title(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProductCopy_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProductCopy", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProductCopy_description(ctx context.Context, field graphql.CollectedField, obj *model.ProductCopy) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProductCopy_description(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProductCopy_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProductCopy", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProductCopy_altText(ctx context.Context, field graphql.CollectedField, obj *model.ProductCopy) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProductCopy_altText(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AltText, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProductCopy_altText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProductCopy", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ProductImage_id(ctx context.Context, field graphql.CollectedField, obj *model.ProductImage) (ret graphql.Marshaler) {
@@ -3132,6 +3310,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "generateProductCopy":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_generateProductCopy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "signUp":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_signUp(ctx, field)
@@ -3258,6 +3443,54 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Product_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var productCopyImplementors = []string{"ProductCopy"}
+
+func (ec *executionContext) _ProductCopy(ctx context.Context, sel ast.SelectionSet, obj *model.ProductCopy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, productCopyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProductCopy")
+		case "title":
+			out.Values[i] = ec._ProductCopy_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._ProductCopy_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "altText":
+			out.Values[i] = ec._ProductCopy_altText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -4103,6 +4336,20 @@ func (ec *executionContext) marshalNProduct2ᚖgithubᚗcomᚋGirolamoneᚋkiosk
 		return graphql.Null
 	}
 	return ec._Product(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNProductCopy2githubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductCopy(ctx context.Context, sel ast.SelectionSet, v model.ProductCopy) graphql.Marshaler {
+	return ec._ProductCopy(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNProductCopy2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductCopy(ctx context.Context, sel ast.SelectionSet, v *model.ProductCopy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProductCopy(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNProductImage2ᚕᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductImageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProductImage) graphql.Marshaler {

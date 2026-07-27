@@ -66,6 +66,10 @@ func (l *Local) Open(_ context.Context, key string) (io.ReadCloser, string, erro
 	// passes, so treat the key as untrusted: strip any directory part before
 	// it can walk out of the upload directory.
 	safe := filepath.Base(path.Clean("/" + key))
+	if safe == "." || safe == string(filepath.Separator) || safe == "/" {
+		// An empty or all-separator key collapses to the directory itself.
+		return nil, "", ErrNotFound
+	}
 
 	f, err := os.Open(filepath.Join(l.dir, safe))
 	if errors.Is(err, os.ErrNotExist) {
@@ -73,6 +77,14 @@ func (l *Local) Open(_ context.Context, key string) (io.ReadCloser, string, erro
 	}
 	if err != nil {
 		return nil, "", fmt.Errorf("open object: %w", err)
+	}
+
+	// Opening a directory succeeds on most systems and only fails on read,
+	// which surfaces far away from the cause.
+	info, err := f.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		f.Close()
+		return nil, "", ErrNotFound
 	}
 
 	contentType := "application/octet-stream"

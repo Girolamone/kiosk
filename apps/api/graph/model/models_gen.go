@@ -40,6 +40,14 @@ type Product struct {
 	UpdatedAt  time.Time       `json:"updatedAt"`
 }
 
+// Listing copy written from a product photograph.
+type ProductCopy struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	// Describes the photograph itself, for screen readers and broken images.
+	AltText string `json:"altText"`
+}
+
 type ProductImage struct {
 	ID       string `json:"id"`
 	URL      string `json:"url"`

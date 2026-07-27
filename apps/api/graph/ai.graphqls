@@ -1,0 +1,19 @@
+"Listing copy written from a product photograph."
+type ProductCopy {
+  title: String!
+  description: String!
+  "Describes the photograph itself, for screen readers and broken images."
+  altText: String!
+}
+
+extend type Mutation {
+  """
+  Writes listing copy from an uploaded photo. Takes the storage key returned
+  by POST /api/uploads.
+
+  This is an accelerator, not a requirement. When generation is unavailable
+  the caller should let the seller write the listing by hand rather than
+  treat it as a failed operation.
+  """
+  generateProductCopy(imageKey: String!): ProductCopy!
+}

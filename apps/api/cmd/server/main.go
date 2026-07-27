@@ -21,6 +21,7 @@ import (
 
 	"github.com/Girolamone/kiosk/apps/api/graph"
 	"github.com/Girolamone/kiosk/apps/api/internal/account"
+	"github.com/Girolamone/kiosk/apps/api/internal/ai"
 	"github.com/Girolamone/kiosk/apps/api/internal/auth"
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
 	"github.com/Girolamone/kiosk/apps/api/internal/config"
@@ -80,19 +81,21 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	products := catalog.NewRepository(pool)
 	tokens := auth.NewTokenIssuer(cfg.JWTSecret, sessionTTL)
 
-	resolver := &graph.Resolver{
-		Catalog:  products,
-		Accounts: account.NewService(account.NewRepository(pool)),
-		Tokens:   tokens,
-	}
-
-	sessions := auth.Middleware(tokens, cfg.IsProduction())
-	batching := loaders.Middleware(products)
-
 	files, err := newStorage(cfg)
 	if err != nil {
 		return err
 	}
+
+	resolver := &graph.Resolver{
+		Catalog:    products,
+		Accounts:   account.NewService(account.NewRepository(pool)),
+		Tokens:     tokens,
+		Files:      files,
+		Copywriter: newCopywriter(cfg, logger),
+	}
+
+	sessions := auth.Middleware(tokens, cfg.IsProduction())
+	batching := loaders.Middleware(products)
 
 	mux := http.NewServeMux()
 	mux.Handle("/graphql", sessions(batching(newGraphQLHandler(resolver))))
@@ -137,6 +140,18 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	}
 	logger.Info("stopped cleanly")
 	return nil
+}
+
+// newCopywriter returns the configured copy generator, or one that politely
+// declines. Copy generation is an accelerator: a missing key should leave the
+// rest of the application working, not stop the server from starting.
+func newCopywriter(cfg config.Config, logger *slog.Logger) ai.CopyGenerator {
+	if cfg.GeminiAPIKey == "" {
+		logger.Warn("GEMINI_API_KEY is not set, product copy generation is disabled")
+		return ai.Disabled{}
+	}
+	logger.Info("product copy generation enabled", "model", cfg.GeminiModel)
+	return ai.NewGemini(cfg.GeminiAPIKey, cfg.GeminiModel)
 }
 
 // newStorage picks the driver from configuration. Local keeps the project
