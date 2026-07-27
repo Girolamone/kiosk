@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,7 +25,9 @@ import (
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
 	"github.com/Girolamone/kiosk/apps/api/internal/config"
 	"github.com/Girolamone/kiosk/apps/api/internal/db"
+	"github.com/Girolamone/kiosk/apps/api/internal/httpapi"
 	"github.com/Girolamone/kiosk/apps/api/internal/loaders"
+	"github.com/Girolamone/kiosk/apps/api/internal/storage"
 )
 
 // How long a session survives before the user has to sign in again.
@@ -86,8 +89,20 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	sessions := auth.Middleware(tokens, cfg.IsProduction())
 	batching := loaders.Middleware(products)
 
+	files, err := newStorage(cfg)
+	if err != nil {
+		return err
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle("/graphql", sessions(batching(newGraphQLHandler(resolver))))
+	mux.Handle("POST /api/uploads", sessions(httpapi.Upload(files, logger)))
+
+	// With the local driver the API serves the files it stored. With GCS the
+	// bucket serves them and this route does not exist.
+	if local, ok := files.(*storage.Local); ok {
+		mux.Handle("GET /uploads/", local.Handler())
+	}
 	mux.Handle("GET /healthz", healthHandler(pool))
 	// The playground is intentionally public: this is a demo, and being able
 	// to explore the schema is the point.
@@ -122,6 +137,19 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	}
 	logger.Info("stopped cleanly")
 	return nil
+}
+
+// newStorage picks the driver from configuration. Local keeps the project
+// runnable with no cloud account at all.
+func newStorage(cfg config.Config) (storage.Store, error) {
+	switch cfg.StorageDriver {
+	case "local":
+		return storage.NewLocal(cfg.LocalStorageDir, "/uploads")
+	case "gcs":
+		return nil, fmt.Errorf("the gcs driver is not implemented yet")
+	default:
+		return nil, fmt.Errorf("unknown STORAGE_DRIVER %q: want \"local\" or \"gcs\"", cfg.StorageDriver)
+	}
 }
 
 func newGraphQLHandler(resolver *graph.Resolver) http.Handler {

@@ -11,13 +11,15 @@ import (
 )
 
 type Config struct {
-	Environment   string
-	DatabaseURL   string
-	Port          string
-	JWTSecret     string
-	GeminiAPIKey  string
-	StorageDriver string
-	GCSBucket     string
+	Environment     string
+	DatabaseURL     string
+	Port            string
+	JWTSecret       string
+	GeminiAPIKey    string
+	StorageDriver   string
+	LocalStorageDir string
+	GCSBucket       string
+	GeminiModel     string
 
 	// LogSQL prints every statement the pool runs. Development only: it is
 	// how you see an N+1 rather than guess at one.
@@ -35,14 +37,16 @@ func Load() (Config, error) {
 	LoadDotEnv()
 
 	cfg := Config{
-		Environment:   envOr("ENVIRONMENT", "development"),
-		DatabaseURL:   os.Getenv("DATABASE_URL"),
-		Port:          envOr("PORT", "8080"),
-		JWTSecret:     os.Getenv("JWT_SECRET"),
-		GeminiAPIKey:  os.Getenv("GEMINI_API_KEY"),
-		StorageDriver: envOr("STORAGE_DRIVER", "local"),
-		GCSBucket:     os.Getenv("GCS_BUCKET"),
-		LogSQL:        os.Getenv("LOG_SQL") == "true",
+		Environment:     envOr("ENVIRONMENT", "development"),
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		Port:            envOr("PORT", "8080"),
+		JWTSecret:       os.Getenv("JWT_SECRET"),
+		GeminiAPIKey:    os.Getenv("GEMINI_API_KEY"),
+		StorageDriver:   envOr("STORAGE_DRIVER", "local"),
+		LocalStorageDir: envOr("LOCAL_STORAGE_DIR", "./uploads"),
+		GCSBucket:       os.Getenv("GCS_BUCKET"),
+		GeminiModel:     envOr("GEMINI_MODEL", "gemini-flash-latest"),
+		LogSQL:          os.Getenv("LOG_SQL") == "true",
 	}
 
 	var missing []string
