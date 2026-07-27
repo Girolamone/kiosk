@@ -10,6 +10,31 @@ import (
 	"time"
 )
 
+// A basket. Anonymous: it is identified by an unguessable token the client
+// keeps, not by a signed-in user, because most shoppers never sign in.
+//
+// Names and prices are read from the catalogue every time this is resolved,
+// never stored on the cart and never taken from the client.
+type Cart struct {
+	Token      string      `json:"token"`
+	Currency   string      `json:"currency"`
+	Items      []*CartItem `json:"items"`
+	TotalCents int         `json:"totalCents"`
+}
+
+type CartItem struct {
+	ProductID      string `json:"productId"`
+	Name           string `json:"name"`
+	UnitPriceCents int    `json:"unitPriceCents"`
+	Quantity       int    `json:"quantity"`
+	LineTotalCents int    `json:"lineTotalCents"`
+}
+
+type Checkout struct {
+	// Where to send the shopper to pay.
+	URL string `json:"url"`
+}
+
 type CreateProductInput struct {
 	StoreID     string             `json:"storeId"`
 	Name        string             `json:"name"`
@@ -65,6 +90,15 @@ type ProductImageInput struct {
 }
 
 type Query struct {
+}
+
+type SetCartItemInput struct {
+	StoreSlug string `json:"storeSlug"`
+	ProductID string `json:"productId"`
+	// Zero removes the line.
+	Quantity int `json:"quantity"`
+	// An existing cart token. Omit it to start a new cart.
+	Token *string `json:"token,omitempty"`
 }
 
 type Store struct {

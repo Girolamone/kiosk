@@ -28,6 +28,8 @@ import (
 	"github.com/Girolamone/kiosk/apps/api/internal/db"
 	"github.com/Girolamone/kiosk/apps/api/internal/httpapi"
 	"github.com/Girolamone/kiosk/apps/api/internal/loaders"
+	"github.com/Girolamone/kiosk/apps/api/internal/orders"
+	"github.com/Girolamone/kiosk/apps/api/internal/payments"
 	"github.com/Girolamone/kiosk/apps/api/internal/storage"
 )
 
@@ -86,12 +88,18 @@ func run(cfg config.Config, logger *slog.Logger) error {
 		return err
 	}
 
+	baskets := orders.NewRepository(pool)
+	gateway := newPaymentGateway(cfg, logger)
+
 	resolver := &graph.Resolver{
 		Catalog:    products,
 		Accounts:   account.NewService(account.NewRepository(pool)),
 		Tokens:     tokens,
 		Files:      files,
 		Copywriter: newCopywriter(cfg, logger),
+		Orders:     baskets,
+		Payments:   gateway,
+		PublicURL:  cfg.PublicURL,
 	}
 
 	sessions := auth.Middleware(tokens, cfg.IsProduction())
@@ -100,6 +108,9 @@ func run(cfg config.Config, logger *slog.Logger) error {
 	mux := http.NewServeMux()
 	mux.Handle("/graphql", sessions(batching(newGraphQLHandler(resolver))))
 	mux.Handle("POST /api/uploads", sessions(httpapi.Upload(files, logger)))
+	// No session middleware: Stripe is the caller and authenticates with a
+	// signature, not a cookie.
+	mux.Handle("POST /api/stripe/webhook", httpapi.StripeWebhook(gateway, baskets, logger))
 
 	// With the local driver the API serves the files it stored. With GCS the
 	// bucket serves them and this route does not exist.
@@ -152,6 +163,24 @@ func newCopywriter(cfg config.Config, logger *slog.Logger) ai.CopyGenerator {
 	}
 	logger.Info("product copy generation enabled", "model", cfg.GeminiModel)
 	return ai.NewGemini(cfg.GeminiAPIKey, cfg.GeminiModel)
+}
+
+// newPaymentGateway returns the configured gateway, or one that declines.
+// A shop with no Stripe keys still lists and manages products; it just cannot
+// take money.
+func newPaymentGateway(cfg config.Config, logger *slog.Logger) payments.Gateway {
+	if cfg.StripeSecretKey == "" {
+		logger.Warn("STRIPE_SECRET_KEY is not set, checkout is disabled")
+		return payments.Disabled{}
+	}
+	if cfg.StripeWebhookSecret == "" {
+		// Without it, ParseWebhook refuses every payload, so orders would be
+		// created and never settled. Better to say so at boot than to leave
+		// somebody wondering why nothing is ever marked paid.
+		logger.Warn("STRIPE_WEBHOOK_SECRET is not set, payments will not be recorded as settled")
+	}
+	logger.Info("checkout enabled")
+	return payments.NewStripe(cfg.StripeSecretKey, cfg.StripeWebhookSecret)
 }
 
 // newStorage picks the driver from configuration. Local keeps the project

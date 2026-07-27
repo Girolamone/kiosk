@@ -1,0 +1,50 @@
+type CartItem {
+  productId: ID!
+  name: String!
+  unitPriceCents: Int!
+  quantity: Int!
+  lineTotalCents: Int!
+}
+
+"""
+A basket. Anonymous: it is identified by an unguessable token the client
+keeps, not by a signed-in user, because most shoppers never sign in.
+
+Names and prices are read from the catalogue every time this is resolved,
+never stored on the cart and never taken from the client.
+"""
+type Cart {
+  token: String!
+  currency: String!
+  items: [CartItem!]!
+  totalCents: Int!
+}
+
+input SetCartItemInput {
+  storeSlug: String!
+  productId: ID!
+  "Zero removes the line."
+  quantity: Int!
+  "An existing cart token. Omit it to start a new cart."
+  token: String
+}
+
+type Checkout {
+  "Where to send the shopper to pay."
+  url: String!
+}
+
+extend type Query {
+  cart(token: String!): Cart
+}
+
+extend type Mutation {
+  "Adds, changes or removes one line, returning the whole cart."
+  setCartItem(input: SetCartItemInput!): Cart!
+
+  """
+  Opens a Stripe Checkout session for the cart and records a pending order.
+  The order is only marked paid when Stripe says so, over the webhook.
+  """
+  createCheckout(token: String!, email: String!): Checkout!
+}

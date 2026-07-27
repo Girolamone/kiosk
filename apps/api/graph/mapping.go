@@ -4,6 +4,7 @@ import (
 	"github.com/Girolamone/kiosk/apps/api/graph/model"
 	"github.com/Girolamone/kiosk/apps/api/internal/account"
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
+	"github.com/Girolamone/kiosk/apps/api/internal/orders"
 )
 
 // The domain and the API deliberately keep separate types. The domain follows
@@ -71,6 +72,25 @@ func toProductImages(imgs []catalog.ProductImage) []*model.ProductImage {
 		})
 	}
 	return out
+}
+
+func toCart(c orders.Cart, currency string) *model.Cart {
+	items := make([]*model.CartItem, 0, len(c.Items))
+	for _, item := range c.Items {
+		items = append(items, &model.CartItem{
+			ProductID:      item.ProductID,
+			Name:           item.Name,
+			UnitPriceCents: item.UnitPriceCents,
+			Quantity:       item.Quantity,
+			LineTotalCents: item.LineTotalCents(),
+		})
+	}
+	return &model.Cart{
+		Token:      c.Token,
+		Currency:   currency,
+		Items:      items,
+		TotalCents: c.TotalCents(),
+	}
 }
 
 func toProductStatus(s catalog.ProductStatus) model.ProductStatus {

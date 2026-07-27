@@ -21,6 +21,14 @@ type Config struct {
 	GCSBucket       string
 	GeminiModel     string
 
+	// PublicURL is where this deployment is reachable from a browser. Stripe
+	// sends the shopper back here, so it has to be the real address rather
+	// than anything derived from the incoming request, which a caller
+	// controls.
+	PublicURL           string
+	StripeSecretKey     string
+	StripeWebhookSecret string
+
 	// LogSQL prints every statement the pool runs. Development only: it is
 	// how you see an N+1 rather than guess at one.
 	LogSQL bool
@@ -47,6 +55,12 @@ func Load() (Config, error) {
 		GCSBucket:       os.Getenv("GCS_BUCKET"),
 		GeminiModel:     envOr("GEMINI_MODEL", "gemini-flash-latest"),
 		LogSQL:          os.Getenv("LOG_SQL") == "true",
+
+		// In development the browser talks to the Vite dev server, which
+		// proxies the API, so that is the address Stripe must return to.
+		PublicURL:           strings.TrimSuffix(envOr("PUBLIC_URL", "http://localhost:5173"), "/"),
+		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
+		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 	}
 
 	var missing []string

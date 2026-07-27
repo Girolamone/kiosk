@@ -5,6 +5,8 @@ import (
 	"github.com/Girolamone/kiosk/apps/api/internal/ai"
 	"github.com/Girolamone/kiosk/apps/api/internal/auth"
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
+	"github.com/Girolamone/kiosk/apps/api/internal/orders"
+	"github.com/Girolamone/kiosk/apps/api/internal/payments"
 	"github.com/Girolamone/kiosk/apps/api/internal/storage"
 )
 
@@ -18,4 +20,9 @@ type Resolver struct {
 	Tokens     *auth.TokenIssuer
 	Files      storage.Store
 	Copywriter ai.CopyGenerator
+	Orders     *orders.Repository
+	Payments   payments.Gateway
+	// PublicURL is where this deployment is reachable, used to build the
+	// addresses Stripe sends the shopper back to.
+	PublicURL string
 }
