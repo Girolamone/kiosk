@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -13,13 +14,23 @@ import (
 // larger is not from Stripe.
 const maxWebhookBytes = 1 << 20 // 1 MiB
 
+// OrderSettler is the slice of the orders repository this endpoint needs.
+// Naming it here rather than taking the concrete type means the handler can
+// be tested against a fake, which is the difference between the retry and
+// idempotency paths being covered and being hoped about.
+type OrderSettler interface {
+	MarkPaid(ctx context.Context, sessionID string) (bool, error)
+	CartByToken(ctx context.Context, token string) (orders.Cart, error)
+	ClearCart(ctx context.Context, cartID string) error
+}
+
 // StripeWebhook settles orders when Stripe reports a payment.
 //
 // This endpoint is deliberately unauthenticated, because Stripe is the
 // caller. The signature check inside ParseWebhook is the only thing standing
 // between it and anyone on the internet marking their own order paid, so an
 // unverified payload is refused rather than trusted.
-func StripeWebhook(gateway payments.Gateway, repo *orders.Repository, logger *slog.Logger) http.Handler {
+func StripeWebhook(gateway payments.Gateway, repo OrderSettler, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		payload, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxWebhookBytes))
 		if err != nil {

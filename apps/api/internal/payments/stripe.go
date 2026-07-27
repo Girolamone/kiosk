@@ -121,7 +121,17 @@ func (s *Stripe) ParseWebhook(payload []byte, signature string) (Paid, error) {
 		return Paid{}, errors.New("no webhook secret configured, refusing to trust the payload")
 	}
 
-	event, err := webhook.ConstructEvent(payload, signature, s.webhookSecret)
+	// The signature is checked; the API version deliberately is not.
+	//
+	// ConstructEvent otherwise rejects any event whose api_version differs
+	// from the one this library was built against. That coupling is a trap:
+	// the version is a property of the Stripe account, so upgrading the
+	// library, or Stripe moving the account forward, would silently start
+	// refusing every payment notification and no order would ever be
+	// settled. The three fields read below - id, payment_status and
+	// client_reference_id - have been stable across versions for years.
+	event, err := webhook.ConstructEventWithOptions(payload, signature, s.webhookSecret,
+		webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true})
 	if err != nil {
 		return Paid{}, fmt.Errorf("verify webhook signature: %w", err)
 	}
