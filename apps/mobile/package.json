@@ -4,13 +4,13 @@
   "main": "index.ts",
   "dependencies": {
     "@kiosk/shared": "*",
-    "expo": "~57.0.8",
-    "expo-image-picker": "~57.0.6",
-    "expo-secure-store": "~57.0.1",
-    "expo-status-bar": "~57.0.1",
+    "expo": "~56.0.0",
+    "expo-image-picker": "~56.0.22",
+    "expo-secure-store": "~56.0.4",
+    "expo-status-bar": "~56.0.4",
     "graphql": "^16.9.0",
     "react": "19.2.3",
-    "react-native": "0.86.0",
+    "react-native": "0.85.3",
     "urql": "^4.2.1"
   },
   "devDependencies": {
