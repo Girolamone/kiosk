@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Girolamone/kiosk/apps/api/graph"
@@ -23,25 +24,32 @@ import (
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
 	"github.com/Girolamone/kiosk/apps/api/internal/config"
 	"github.com/Girolamone/kiosk/apps/api/internal/db"
+	"github.com/Girolamone/kiosk/apps/api/internal/loaders"
 )
 
 // How long a session survives before the user has to sign in again.
 const sessionTTL = 7 * 24 * time.Hour
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	if err := run(logger); err != nil {
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("configuration", "err", err)
+		os.Exit(1)
+	}
+
+	level := slog.LevelInfo
+	if cfg.LogSQL {
+		level = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+
+	if err := run(cfg, logger); err != nil {
 		logger.Error("server stopped", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(logger *slog.Logger) error {
-	cfg, err := config.Load()
-	if err != nil {
-		return err
-	}
-
+func run(cfg config.Config, logger *slog.Logger) error {
 	// Cloud Run sends SIGTERM before killing an instance. Catching it lets
 	// in-flight requests finish instead of failing mid-response.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -55,23 +63,31 @@ func run(logger *slog.Logger) error {
 	}
 	logger.Info("migrations up to date")
 
-	pool, err := db.Connect(ctx, cfg.DatabaseURL)
+	var tracer pgx.QueryTracer
+	if cfg.LogSQL {
+		tracer = db.NewQueryLogger(logger)
+	}
+
+	pool, err := db.Connect(ctx, cfg.DatabaseURL, tracer)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
 
+	products := catalog.NewRepository(pool)
 	tokens := auth.NewTokenIssuer(cfg.JWTSecret, sessionTTL)
+
 	resolver := &graph.Resolver{
-		Catalog:  catalog.NewRepository(pool),
+		Catalog:  products,
 		Accounts: account.NewService(account.NewRepository(pool)),
 		Tokens:   tokens,
 	}
 
 	sessions := auth.Middleware(tokens, cfg.IsProduction())
+	batching := loaders.Middleware(products)
 
 	mux := http.NewServeMux()
-	mux.Handle("/graphql", sessions(newGraphQLHandler(resolver)))
+	mux.Handle("/graphql", sessions(batching(newGraphQLHandler(resolver))))
 	mux.Handle("GET /healthz", healthHandler(pool))
 	// The playground is intentionally public: this is a demo, and being able
 	// to explore the schema is the point.

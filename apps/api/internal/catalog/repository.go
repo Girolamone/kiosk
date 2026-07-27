@@ -182,6 +182,34 @@ func (r *Repository) ImagesByProduct(ctx context.Context, productID string) ([]P
 	return images, nil
 }
 
+// ImagesByProducts fetches images for many products in one round trip and
+// groups them by product. Products with no images are simply absent from the
+// map; the caller decides what an absent key means.
+func (r *Repository) ImagesByProducts(ctx context.Context, productIDs []string) (map[string][]ProductImage, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id::text, product_id::text, url, alt_text, position
+		  FROM product_images
+		 WHERE product_id = ANY($1::uuid[])
+		 ORDER BY product_id, position, created_at`, productIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query product images: %w", err)
+	}
+	defer rows.Close()
+
+	byProduct := make(map[string][]ProductImage, len(productIDs))
+	for rows.Next() {
+		var img ProductImage
+		if err := rows.Scan(&img.ID, &img.ProductID, &img.URL, &img.AltText, &img.Position); err != nil {
+			return nil, fmt.Errorf("scan product image: %w", err)
+		}
+		byProduct[img.ProductID] = append(byProduct[img.ProductID], img)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read product images: %w", err)
+	}
+	return byProduct, nil
+}
+
 // scanner is satisfied by both pgx.Row and pgx.Rows, so single-row and
 // multi-row reads share the same scan code.
 type scanner interface {

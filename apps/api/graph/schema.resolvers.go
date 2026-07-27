@@ -8,6 +8,7 @@ import (
 	"github.com/Girolamone/kiosk/apps/api/graph/model"
 	"github.com/Girolamone/kiosk/apps/api/internal/auth"
 	"github.com/Girolamone/kiosk/apps/api/internal/catalog"
+	"github.com/Girolamone/kiosk/apps/api/internal/loaders"
 )
 
 // CreateStore is the resolver for the createStore field.
@@ -82,7 +83,15 @@ func (r *mutationResolver) UpdateProduct(ctx context.Context, input model.Update
 
 // Images is the resolver for the images field.
 func (r *productResolver) Images(ctx context.Context, obj *model.Product) ([]*model.ProductImage, error) {
-	images, err := r.Catalog.ImagesByProduct(ctx, obj.ID)
+	// Goes through the request's loader rather than straight to the
+	// repository: listing a storefront calls this once per product, and the
+	// loader collapses those into one statement.
+	loader, err := loaders.For(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	images, err := loader.ProductImages.Load(ctx, obj.ID)
 	if err != nil {
 		return nil, err
 	}

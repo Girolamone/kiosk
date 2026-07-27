@@ -18,6 +18,10 @@ type Config struct {
 	GeminiAPIKey  string
 	StorageDriver string
 	GCSBucket     string
+
+	// LogSQL prints every statement the pool runs. Development only: it is
+	// how you see an N+1 rather than guess at one.
+	LogSQL bool
 }
 
 // IsProduction drives anything that has to behave differently once real
@@ -38,6 +42,7 @@ func Load() (Config, error) {
 		GeminiAPIKey:  os.Getenv("GEMINI_API_KEY"),
 		StorageDriver: envOr("STORAGE_DRIVER", "local"),
 		GCSBucket:     os.Getenv("GCS_BUCKET"),
+		LogSQL:        os.Getenv("LOG_SQL") == "true",
 	}
 
 	var missing []string
