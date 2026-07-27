@@ -11,10 +11,11 @@ import (
 )
 
 type CreateProductInput struct {
-	StoreID     string  `json:"storeId"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	PriceCents  int     `json:"priceCents"`
+	StoreID     string             `json:"storeId"`
+	Name        string             `json:"name"`
+	Description *string            `json:"description,omitempty"`
+	PriceCents  int                `json:"priceCents"`
+	Image       *ProductImageInput `json:"image,omitempty"`
 }
 
 type CreateStoreInput struct {
@@ -53,6 +54,14 @@ type ProductImage struct {
 	URL      string `json:"url"`
 	AltText  string `json:"altText"`
 	Position int    `json:"position"`
+}
+
+// A photo to attach, identified by the storage key that POST /api/uploads
+// returned. The key rather than a URL: the server builds the URL, so a client
+// cannot point a product at an arbitrary address.
+type ProductImageInput struct {
+	Key     string  `json:"key"`
+	AltText *string `json:"altText,omitempty"`
 }
 
 type Query struct {

@@ -18,6 +18,7 @@ export type Scalars = {
 
 export type CreateProductInput = {
   description?: InputMaybe<Scalars['String']['input']>;
+  image?: InputMaybe<ProductImageInput>;
   name: Scalars['String']['input'];
   priceCents: Scalars['Int']['input'];
   storeId: Scalars['ID']['input'];
@@ -117,6 +118,16 @@ export type ProductImage = {
   id: Scalars['ID']['output'];
   position: Scalars['Int']['output'];
   url: Scalars['String']['output'];
+};
+
+/**
+ * A photo to attach, identified by the storage key that POST /api/uploads
+ * returned. The key rather than a URL: the server builds the URL, so a client
+ * cannot point a product at an arbitrary address.
+ */
+export type ProductImageInput = {
+  altText?: InputMaybe<Scalars['String']['input']>;
+  key: Scalars['String']['input'];
 };
 
 export const ProductStatus = {

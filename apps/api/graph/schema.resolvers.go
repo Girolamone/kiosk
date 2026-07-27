@@ -44,7 +44,23 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.Create
 		return nil, err
 	}
 
-	created, err := r.Catalog.CreateProduct(ctx, product)
+	var image *catalog.NewImage
+	if input.Image != nil {
+		// Confirm the key names something that was actually uploaded before
+		// writing a row that points at it.
+		file, _, err := r.Files.Open(ctx, input.Image.Key)
+		if err != nil {
+			return nil, errors.New("that photo is no longer available: upload it again")
+		}
+		file.Close()
+
+		image = &catalog.NewImage{
+			URL:     r.Files.URLFor(input.Image.Key),
+			AltText: deref(input.Image.AltText),
+		}
+	}
+
+	created, err := r.Catalog.CreateProduct(ctx, product, image)
 	if err != nil {
 		return nil, err
 	}

@@ -49,11 +49,22 @@ input CreateStoreInput {
   description: String
 }
 
+"""
+A photo to attach, identified by the storage key that POST /api/uploads
+returned. The key rather than a URL: the server builds the URL, so a client
+cannot point a product at an arbitrary address.
+"""
+input ProductImageInput {
+  key: String!
+  altText: String
+}
+
 input CreateProductInput {
   storeId: ID!
   name: String!
   description: String
   priceCents: Int!
+  image: ProductImageInput
 }
 
 input UpdateProductInput {

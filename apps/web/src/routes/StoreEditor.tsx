@@ -85,6 +85,7 @@ function NewProductForm({
   const [image, setImage] = useState<UploadedImage | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [altText, setAltText] = useState('')
   const [price, setPrice] = useState('')
 
   const [uploading, setUploading] = useState(false)
@@ -121,6 +122,7 @@ function NewProductForm({
     // Only fill fields the seller has not already written in.
     setName((current) => current || copy.title)
     setDescription((current) => current || copy.description)
+    setAltText((current) => current || copy.altText)
     setCopyNote(null)
   }
 
@@ -128,13 +130,21 @@ function NewProductForm({
     event.preventDefault()
     const priceCents = Math.round(Number(price) * 100)
     const result = await createProduct({
-      input: { storeId, name, description, priceCents },
+      input: {
+        storeId,
+        name,
+        description,
+        priceCents,
+        // The key, not the URL: the server builds the URL from it.
+        image: image ? { key: image.key, altText } : null,
+      },
     })
     if (result.error) return
 
     setImage(null)
     setName('')
     setDescription('')
+    setAltText('')
     setPrice('')
     setCopyNote(null)
     onCreated()
@@ -194,6 +204,15 @@ function NewProductForm({
               onChange={(e) => setDescription(e.target.value)}
             />
           </Field>
+
+          {image && (
+            <Field
+              label="Photo description"
+              hint="Read aloud by screen readers and shown if the image fails to load. Describe the photo, not the sales pitch."
+            >
+              <Input value={altText} onChange={(e) => setAltText(e.target.value)} />
+            </Field>
+          )}
 
           <Field label={`Price (${currency})`}>
             <Input

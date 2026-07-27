@@ -38,6 +38,11 @@ type Object struct {
 type Store interface {
 	Put(ctx context.Context, contentType string, r io.Reader) (Object, error)
 	Open(ctx context.Context, key string) (io.ReadCloser, string, error)
+	// URLFor turns a storage key into a public URL. The server derives this
+	// rather than letting a client hand one over: a client-supplied URL could
+	// point anywhere, including at somebody else's site or at a javascript:
+	// scheme that a browser would run.
+	URLFor(key string) string
 }
 
 // imageTypes is the allowlist, mapping detected type to file extension.

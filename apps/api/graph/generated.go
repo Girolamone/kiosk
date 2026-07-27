@@ -420,6 +420,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreateProductInput,
 		ec.unmarshalInputCreateStoreInput,
+		ec.unmarshalInputProductImageInput,
 		ec.unmarshalInputUpdateProductInput,
 	)
 	first := true
@@ -3119,7 +3120,7 @@ func (ec *executionContext) unmarshalInputCreateProductInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"storeId", "name", "description", "priceCents"}
+	fieldsInOrder := [...]string{"storeId", "name", "description", "priceCents", "image"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3154,6 +3155,13 @@ func (ec *executionContext) unmarshalInputCreateProductInput(ctx context.Context
 				return it, err
 			}
 			it.PriceCents = data
+		case "image":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+			data, err := ec.unmarshalOProductImageInput2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductImageInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Image = data
 		}
 	}
 	return it, nil
@@ -3198,6 +3206,43 @@ func (ec *executionContext) unmarshalInputCreateStoreInput(ctx context.Context, 
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputProductImageInput(ctx context.Context, obj any) (model.ProductImageInput, error) {
+	var it model.ProductImageInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "altText"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "altText":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("altText"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AltText = data
 		}
 	}
 	return it, nil
@@ -4662,6 +4707,14 @@ func (ec *executionContext) marshalOProduct2ᚖgithubᚗcomᚋGirolamoneᚋkiosk
 		return graphql.Null
 	}
 	return ec._Product(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOProductImageInput2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductImageInput(ctx context.Context, v any) (*model.ProductImageInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputProductImageInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOProductStatus2ᚖgithubᚗcomᚋGirolamoneᚋkioskᚋappsᚋapiᚋgraphᚋmodelᚐProductStatus(ctx context.Context, v any) (*model.ProductStatus, error) {

@@ -119,13 +119,51 @@ func (r *Repository) ProductsByStore(ctx context.Context, storeID string, status
 	return products, nil
 }
 
-func (r *Repository) CreateProduct(ctx context.Context, p Product) (Product, error) {
-	row := r.pool.QueryRow(ctx, `
+// NewImage is a photo to attach to a product as it is created.
+type NewImage struct {
+	URL     string
+	AltText string
+}
+
+// CreateProduct inserts a product and, when given one, its first photo.
+//
+// Both happen in one transaction. Doing them as two independent statements
+// means a failure on the second leaves a product with no photo and nothing
+// reporting that anything went wrong, which is exactly how the missing image
+// went unnoticed the first time.
+func (r *Repository) CreateProduct(ctx context.Context, p Product, image *NewImage) (Product, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return Product{}, fmt.Errorf("begin transaction: %w", err)
+	}
+	// Rolls back unless the commit below already happened, in which case it
+	// is a no-op.
+	defer tx.Rollback(ctx)
+
+	row := tx.QueryRow(ctx, `
 		INSERT INTO products (store_id, name, description, price_cents, status)
 		VALUES ($1::uuid, $2, $3, $4, $5)
 		RETURNING `+productColumns,
 		p.StoreID, p.Name, p.Description, p.PriceCents, string(p.Status))
-	return scanProduct(row)
+
+	created, err := scanProduct(row)
+	if err != nil {
+		return Product{}, err
+	}
+
+	if image != nil {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO product_images (product_id, url, alt_text, position)
+			VALUES ($1::uuid, $2, $3, 0)`,
+			created.ID, image.URL, image.AltText); err != nil {
+			return Product{}, fmt.Errorf("attach product image: %w", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return Product{}, fmt.Errorf("commit product: %w", err)
+	}
+	return created, nil
 }
 
 // ProductPatch carries a partial update. A nil field means "leave alone".
