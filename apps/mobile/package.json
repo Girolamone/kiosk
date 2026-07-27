@@ -5,8 +5,8 @@
   "dependencies": {
     "@kiosk/shared": "*",
     "expo": "~57.0.8",
-    "expo-image-picker": "~17.0.0",
-    "expo-secure-store": "~15.0.0",
+    "expo-image-picker": "~57.0.6",
+    "expo-secure-store": "~57.0.1",
     "expo-status-bar": "~57.0.1",
     "graphql": "^16.9.0",
     "react": "19.2.3",
