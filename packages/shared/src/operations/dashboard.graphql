@@ -1,0 +1,53 @@
+fragment StoreSummary on Store {
+  id
+  name
+  slug
+  description
+  currency
+}
+
+query MyStores {
+  myStores {
+    ...StoreSummary
+  }
+}
+
+# The dashboard asks for each status separately: the seller needs to see
+# drafts, which the public storefront must never receive.
+query StoreProducts($slug: String!) {
+  store(slug: $slug) {
+    ...StoreSummary
+    drafts: products(status: DRAFT) {
+      ...ProductCard
+    }
+    published: products(status: ACTIVE) {
+      ...ProductCard
+    }
+  }
+}
+
+mutation CreateStore($input: CreateStoreInput!) {
+  createStore(input: $input) {
+    ...StoreSummary
+  }
+}
+
+mutation CreateProduct($input: CreateProductInput!) {
+  createProduct(input: $input) {
+    ...ProductCard
+  }
+}
+
+mutation UpdateProduct($input: UpdateProductInput!) {
+  updateProduct(input: $input) {
+    ...ProductCard
+  }
+}
+
+mutation GenerateProductCopy($imageKey: String!) {
+  generateProductCopy(imageKey: $imageKey) {
+    title
+    description
+    altText
+  }
+}

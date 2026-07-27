@@ -1,0 +1,32 @@
+fragment ProductCard on Product {
+  id
+  name
+  description
+  priceCents
+  status
+  images {
+    id
+    url
+    altText
+  }
+}
+
+query Storefront($slug: String!) {
+  store(slug: $slug) {
+    id
+    name
+    slug
+    description
+    currency
+    products {
+      ...ProductCard
+    }
+  }
+}
+
+query ProductDetail($id: ID!) {
+  product(id: $id) {
+    ...ProductCard
+    createdAt
+  }
+}

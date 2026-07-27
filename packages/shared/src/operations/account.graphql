@@ -1,0 +1,26 @@
+fragment CurrentUser on User {
+  id
+  email
+}
+
+query Me {
+  me {
+    ...CurrentUser
+  }
+}
+
+mutation SignUp($email: String!, $password: String!) {
+  signUp(email: $email, password: $password) {
+    ...CurrentUser
+  }
+}
+
+mutation LogIn($email: String!, $password: String!) {
+  logIn(email: $email, password: $password) {
+    ...CurrentUser
+  }
+}
+
+mutation LogOut {
+  logOut
+}

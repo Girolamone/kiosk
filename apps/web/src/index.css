@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Warm neutrals rather than pure grey, so product photography sits on
+     something that reads as paper instead of a screenshot. */
+  --color-paper: #faf8f5;
+  --color-ink: #1a1a18;
+  --color-muted: #6f6a63;
+  --color-line: #e4dfd7;
+  --color-accent: #1f4d3f;
+  --color-accent-soft: #eaf0ed;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* Anything focusable keeps a visible ring. Removing the default without
+     replacing it makes the app unusable from a keyboard. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
