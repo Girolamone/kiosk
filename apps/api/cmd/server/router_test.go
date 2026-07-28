@@ -84,3 +84,23 @@ func TestUnknownPathsFallBackToTheApp(t *testing.T) {
 		t.Errorf("body = %q, want the app's index.html", recorder.Body.String())
 	}
 }
+
+// A path that names a file is a request for that file. Answering it with the
+// app means a browser asking for /favicon.ico gets a page of HTML and a 200,
+// and has to work out for itself that it is not an icon.
+func TestMissingFilesAreNotFound(t *testing.T) {
+	webDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(webDir, "index.html"), []byte("<!doctype html>app"), 0o644); err != nil {
+		t.Fatalf("write index.html: %v", err)
+	}
+	router := newRouter(testRoutes(t, config.Config{WebDir: webDir}))
+
+	for _, missing := range []string{"/favicon.ico", "/assets/gone.js", "/robots.txt"} {
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, missing, nil))
+
+		if recorder.Code != http.StatusNotFound {
+			t.Errorf("GET %s = %d, want 404", missing, recorder.Code)
+		}
+	}
+}
